@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Hỗ trợ xếp lịch tín chỉ KMA</title>
+	<meta charset="utf-8">
+
+	<link rel="shortcut icon" href="https://avatars1.githubusercontent.com/u/46277436" type="image/png"/>
+	<link href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+	<link href="./style.css" rel="stylesheet">
+	
+	<script src="https://code.jquery.com/jquery-3.4.1.min.js" crossorigin="anonymous"></script>
+	<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+	<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.bundle.min.js" integrity="sha384-6khuMg9gaYr5AxOqhkVIODVIvm9ynTT5J4V1cfthmT+emCG6yVmEZsRHdxlotUnm" crossorigin="anonymous"></script>
+	<script src="./mon.js"></script>
+
+</head>
+<body>
+	<!-- Loader -->
+	<div id="container-dual-ring">
+		<div class="lds-dual-ring"><div></div><div></div><div></div><div></div></div>
+	</div>
+	
+	<!-- Body -->
+	<div id="body">
+		<header class="container-fluid py-4 mb-4">
+			<h1><a href='/'>HỖ TRỢ XẾP LỊCH TÍN CHỈ KMA</a><small> for <b><a href="https://www.facebook.com/kitclubKMA" target="_blank">KIT</a></b></small></h1>
+			<p>
+				<b>Kì 1 Năm học 2020 - 2021.</b><br/>
+				Lưu ý:<br/>
+				- Trang web chỉ hỗ trợ xếp lịch, không hỗ trợ đăng ký môn học trên web của trường.<br/>
+				- Các môn có tiết thực hành (có đuôi chấm theo sau) đã được thêm tiết lý thuyết vào.<br/>
+				Hướng dẫn: <br/>
+				- Check vào nút đăng ký các môn muốn học, sau đó chọn lớp cho từng môn, tiết nào bị trùng thì sẽ chuyển sang màu đỏ, bấm vào ô trong lịch để xem những môn của tiết đấy.<br/>
+				- Xem chi tiết thông tin của từng lớp trong file excel của trường, tải ở <b><a href="./tinchi_ky1_2020_2021.xlsx" download="tinchi_ky1_2020_2021.xlsx" target="_blank">đây</a></b>.<br/><br/>
+				<b>Chúc các bạn đăng ký đúng lớp đã chọn <3</b>
+			</p>
+		</header>
+		<div class="container">
+			<div class="row">
+				<div class="col-md-12">
+					<div id="content">
+						<center style="position:fixed; bottom: 0; right: 0; z-index: 99"><button class="btn btn-success" onclick="$('#mon').fadeToggle()">Thu/phóng bảng môn học</button>&nbsp;&nbsp;<button class="btn btn-primary" onclick="window.print()">Lưu về PDF</button></center>
+						<table id="mon" class="table table-sm table-hover">
+							<thead>
+								<tr>
+									<th scope="col">Tên môn</th>
+									<th scope="col">Lớp</th>
+									<th scope="col">DK</th>
+								</tr>
+							</thead>
+							<tbody></tbody>
+						</table>
+						<table id="ngay" class="table table-sm table-bordered table-hover">
+							<thead>
+								<tr>
+									<th scope="col" rowspan="2" style="text-align: center; vertical-align: middle;">Ngày</th>
+									<th scope="col" colspan="16" style="text-align: center;">Tiết</th>
+								</tr>
+								<tr>
+									<td style='text-align: center'>01</td>
+									<td style='text-align: center'>02</td>
+									<td style='text-align: center'>03</td>
+									<td style='text-align: center'>04</td>
+									<td style='text-align: center'>05</td>
+									<td style='text-align: center'>06</td>
+									<td style='text-align: center'>07</td>
+									<td style='text-align: center'>08</td>
+									<td style='text-align: center'>09</td>
+									<td style='text-align: center'>10</td>
+									<td style='text-align: center'>11</td>
+									<td style='text-align: center'>12</td>
+									<td style='text-align: center'>13</td>
+									<td style='text-align: center'>14</td>
+									<td style='text-align: center'>15</td>
+									<td style='text-align: center'>16</td>
+								</tr>
+							</thead>
+							<tbody></tbody>
+						</table>
+					</div>
+					<footer class=pb-4>
+						<p class=text-muted><i>&copy;2019 ngosangns. Version 1.2</i></p>
+					</footer>
+				</div>
+			</div>
+		</div>
+	</div>
+	<script type="text/javascript" src="./tinchi.js"></script>
+</body>
+</html>
