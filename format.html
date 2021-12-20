@@ -1,10 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Format JSON tín chỉ KMA</title>
+    <link rel="shortcut icon" href="https://avatars1.githubusercontent.com/u/46277436" type="image/png" />
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
     <style>
         textarea {
             display: block;
@@ -13,14 +17,17 @@
             margin-bottom: 1rem;
             resize: none;
         }
+
         h1 {
             font-weight: normal;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
         }
+
         span {
             display: inline-block;
             margin-bottom: 1rem;
         }
+
         button {
             padding: .5rem;
             border-radius: .2rem;
@@ -29,14 +36,23 @@
         }
     </style>
 </head>
+
 <body>
+    <div class="m-3">
         <h1>Format JSON tín chỉ KMA</h1>
         <span>Paste JSON vào đây</span>
-        <textarea name="input" rows="10"></textarea>
+        <textarea name="input" rows="5"></textarea>
         <button onclick="format()">Format</button><br><br>
-        <span>Copy JSON đã được format vào file <pre style="display: inline">mon.js</pre></span>
-        <textarea name="result" rows="10" readonly="readonly"
-            onclick="this.select()" style="background-color: rgb(214, 214, 214)"></textarea>
+        <span>Copy JSON đã được format vào file
+            <pre style="display: inline">mon.js</pre>
+        </span>
+        <textarea name="result" rows="5" readonly="readonly" onclick="this.select()"
+            style="background-color: rgb(214, 214, 214)"></textarea>
+        <footer class=pb-4>
+            <p><a href="./index.html">Trang xếp lịch</a></p>
+            <p class=text-muted><i>&copy;2019 ngosangns. Version 1.5</i></p>
+        </footer>
+    </div>
     <script>
         function format() {
             let inp = document.getElementsByName("input")[0].value;
@@ -44,8 +60,8 @@
 
             // group subject code
             let subject_tree = {};
-            for(let i = 0; i < res.length; i++) {
-                if(!subject_tree[res[i][0]]) {
+            for (let i = 0; i < res.length; i++) {
+                if (!subject_tree[res[i][0]]) {
                     subject_tree[res[i][0]] = [res[i]];
                 } else {
                     subject_tree[res[i][0]].push(res[i]);
@@ -56,12 +72,12 @@
             for (const [key, value] of Object.entries(subject_tree)) {
                 let name = key.replace(/\((.+?)\)$/i, "");
                 let is_practice_class = key.match(/\((.+?)\.\d{1,}\)$/i);
-                if(is_practice_class) {
+                if (is_practice_class) {
                     let theory_code = is_practice_class[1];
-                    let theory_class = subject_tree[name+`(${theory_code})`];
-                    if(theory_class) {
-                        subject_tree[key].unshift(...theory_class);
-                        for(let i = 0; i < subject_tree[key].length; i++) {
+                    let theory_class = subject_tree[name + `(${theory_code})`];
+                    if (theory_class) {
+                        subject_tree[key].unshift(...JSON.parse(JSON.stringify(theory_class)));
+                        for (let i = 0; i < subject_tree[key].length; i++) {
                             subject_tree[key][i][0] = key; // update subject name
                         }
                     }
@@ -72,10 +88,10 @@
             for (const [key, value] of Object.entries(subject_tree)) {
                 let name = key.replace(/\((.+?)\)$/i, "");
                 let is_practice_class = key.match(/\((.+?)\.\d{1,}\)$/i);
-                if(is_practice_class) {
+                if (is_practice_class) {
                     let theory_code = is_practice_class[1];
-                    if(subject_tree[name+`(${theory_code})`])
-                        delete subject_tree[name+`(${theory_code})`];
+                    if (subject_tree[name + `(${theory_code})`])
+                        delete subject_tree[name + `(${theory_code})`];
                 }
             }
 
@@ -89,4 +105,5 @@
         }
     </script>
 </body>
+
 </html>
