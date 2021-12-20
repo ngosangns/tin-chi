@@ -1,4 +1,5 @@
 ## Tool hỗ trợ xếp lịch cho các đồng chí KMA
+[Demo](https://tin-chi-ngosangns.web.app/)
 ### Hướng dẫn tự deploy tool và cập nhật lịch
 1. Clone repo về và chuẩn bị file excel tín chỉ của trường cấp
 2. Làm theo các bước trong [video hướng dẫn này](https://www.youtube.com/watch?v=rQEv9uwFc18)  
