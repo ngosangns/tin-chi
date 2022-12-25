@@ -1,15 +1,20 @@
 <script lang="ts">
-	import data from '$lib/js/data';
-	import type {
-		CalendarData,
-		RawCalendar,
-		CalendarGroupBySession,
-		CalendarGroupBySessionDetail
-	} from '$lib/js/calendar';
-	import { processCalendar } from '$lib/js/calendar';
-	import type { Moment } from 'moment';
+	import data from '$lib/ts/data';
+	import type { CalendarData, RawCalendar, CalendarGroupBySession } from '$lib/ts/calendar';
+	import { processCalendar } from '$lib/ts/calendar';
 	import SessionBar from './SessionBar.svelte';
 	import { onMount } from 'svelte';
+	import type { Moment } from 'moment';
+
+	type SelectedCalendar = {
+		[subjectName: string]: {
+			isChecked: boolean;
+			class: {
+				code: string;
+				details: CalendarGroupBySession;
+			} | null;
+		};
+	};
 
 	const download_path = '/calendar-excel/2021-2022-2.xlsx';
 	const title = 'Kì 2 Năm học 2021 - 2022';
@@ -21,6 +26,8 @@
 	let modalMessage = '';
 	let modalBtn: any;
 
+	const dayOfWeekMap = ['Chủ Nhật', 'Hai', 'Ba', 'Tư', 'Năm', 'Sáu', 'Bảy'];
+
 	const openModel = (message: string) => {
 		isOpenModel = true;
 		modalMessage = message;
@@ -29,20 +36,22 @@
 
 	const closeModel = () => {
 		isOpenModel = false;
-		modalMessage = '';
 	};
 
 	const calendar: CalendarData = processCalendar(data as Array<RawCalendar>) || [],
-		selectedCalendar: {
-			[subjectName: string]: {
-				isChecked: boolean;
-				class: {
-					code: string;
-					details: CalendarGroupBySession;
-				} | null;
-			};
-		} = {};
+		selectedCalendar: SelectedCalendar = {};
 	const sessions = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
+
+	const calendarTableContent: any = (() => {
+		const result: any = {};
+		for (const date of calendar.dateList) {
+			const dateKey = date.format('YYYY-MM-DD');
+			result[dateKey] = {};
+			const resultDate = result[dateKey];
+			for (const session of sessions) resultDate[session] = [];
+		}
+		return result;
+	})();
 
 	const checkSession = (shift: number) => {
 		if (shift >= 1 && shift <= 6) return 'morning';
@@ -50,7 +59,57 @@
 		return 'evening';
 	};
 
-	const onChangeSelectSubjectClass = (
+	const calculateCalendarTableContent = () => {
+		let isConflict = false;
+		for (const date of calendar.dateList) {
+			const dateKey = date.format('YYYY-MM-DD');
+			const resultDate = calendarTableContent[dateKey];
+			for (const session of sessions) {
+				resultDate[session] = getSessionContent(date, session);
+				if (resultDate[session].length > 1) isConflict = true;
+			}
+		}
+		return {
+			isConflict
+		};
+	};
+
+	const getSessionContent = (date: Moment, session: number) => {
+		const result = [];
+		for (const subjectName in selectedCalendar) {
+			const currentSubject = selectedCalendar[subjectName];
+			if (!currentSubject.isChecked || !currentSubject.class) continue;
+			for (const currentSubjectClassDetail of currentSubject.class.details) {
+				// filter
+				{
+					if (
+						!(
+							date.isBetween(
+								currentSubjectClassDetail.startDate,
+								currentSubjectClassDetail.endDate
+							) ||
+							date.isSame(currentSubjectClassDetail.startDate) ||
+							date.isSame(currentSubjectClassDetail.endDate)
+						)
+					)
+						continue;
+					if (date.day() + 1 !== currentSubjectClassDetail.dayOfWeek) continue;
+					if (
+						session < currentSubjectClassDetail.startSession ||
+						session > currentSubjectClassDetail.endSession
+					)
+						continue;
+				}
+				// add detail to result
+				result.push(currentSubjectClassDetail);
+				break;
+			}
+		}
+
+		return result;
+	};
+
+	const onChangeSelectSubjectClass = async (
 		majorName: string,
 		subjectName: string,
 		selectClassEvent: EventTarget | null = null
@@ -91,46 +150,13 @@
 		if (!selectClassEvent && !selectedCalendar[_subjectName].class) return;
 		if (selectClassEvent && !selectedCalendar[_subjectName].isChecked) return;
 
-		triggerRerenderTable = !triggerRerenderTable;
-	};
+		const result = calculateCalendarTableContent();
 
-	const getSessionContent = (date: Moment, session: number): CalendarGroupBySessionDetail[] => {
-		const result: CalendarGroupBySessionDetail[] = [];
-		for (const subjectName in selectedCalendar) {
-			const currentSubject = selectedCalendar[subjectName];
-			if (!currentSubject.isChecked || !currentSubject.class) continue;
-			for (const currentSubjectClassDetail of currentSubject.class.details) {
-				// filter
-				{
-					if (
-						!(
-							date.isBetween(
-								currentSubjectClassDetail.startDate,
-								currentSubjectClassDetail.endDate
-							) ||
-							date.isSame(currentSubjectClassDetail.startDate) ||
-							date.isSame(currentSubjectClassDetail.endDate)
-						)
-					)
-						continue;
-					if (date.day() + 1 !== currentSubjectClassDetail.dayOfWeek) continue;
-					if (
-						session < currentSubjectClassDetail.startSession ||
-						session > currentSubjectClassDetail.endSession
-					)
-						continue;
-				}
-				// add detail to result
-				result.push(currentSubjectClassDetail);
-				break;
-			}
-		}
-
-		if (result.length > 1 && !isOpenModel) {
+		if (result && result.isConflict && !isOpenModel) {
 			openModel('Cảnh báo trùng lịch!');
 		}
 
-		return result;
+		triggerRerenderTable = !triggerRerenderTable;
 	};
 
 	onMount(() => {
@@ -142,89 +168,96 @@
 <label for="my-modal-4" class="btn mb-2">Chọn lớp</label>
 <input type="checkbox" id="my-modal-4" class="modal-toggle" />
 <label id="my-modal-4-content" for="my-modal-4" class="modal cursor-pointer hidden">
-	<label class="modal-box w-11/12 max-w-5xl relative" for="" data-simplebar>
-		<label for="my-modal-4" class="btn btn-sm btn-circle absolute right-2 top-2">✕</label>
-		<div class="mb-8" style="width: 48rem; margin-left: auto; margin-right: auto">
-			<p class="mb-2">Học kỳ: <b><h3 class="inline">{title}</h3></b></p>
-			<p>Lưu ý:</p>
-			<ul class="list-disc ml-4 mb-2" style="padding-left: .125rem">
-				<li>Trang web chỉ hỗ trợ xếp lịch, không hỗ trợ đăng ký môn học trên web của trường.</li>
-				<li>Các môn có tiết thực hành (có đuôi chấm theo sau) đã được thêm tiết lý thuyết vào.</li>
-			</ul>
-			<p>Hướng dẫn:</p>
-			<ul class="list-disc ml-4 mb-2" style="padding-left: .125rem">
-				<li>
-					Check vào nút đăng ký các môn muốn học, sau đó chọn lớp cho từng môn, tiết nào bị trùng
-					thì sẽ chuyển sang màu đỏ, bấm vào ô trong lịch để xem những môn của tiết đấy.
-				</li>
-				<li>
-					Xem chi tiết thông tin của từng lớp trong file excel của trường, tải ở
-					<!-- svelte-ignore security-anchor-rel-noreferrer -->
-					<b><a href={download_path} target="_blank">đây</a></b>.
-				</li>
-			</ul>
-			<p><b>Chúc các bạn đăng ký đúng lớp đã chọn ❤</b></p>
-		</div>
-		{#each Object.entries(calendar.calendarGroupByMajor).sort( (a, b) => a[0].localeCompare(b[0]) ) as [majorName, major]}
-			<!-- svelte-ignore a11y-no-noninteractive-tabindex -->
-			<div
-				class="collapse collapse-plus border border-base-300 bg-base-100 rounded-box w-full mx-auto mb-4"
-				style="width: 48rem"
-			>
-				<input type="checkbox" />
-				<div class="collapse-title text-xl font-medium">
-					<b><span>{majorName}</span></b>
-				</div>
-				<div class="collapse-content">
-					<table class="table table-compact w-full">
-						<!-- head -->
-						<thead>
-							<tr>
-								<th class="text-center w-24">Đăng ký</th>
-								<th>Tên môn</th>
-								<th class="pl-5 w-40">Lớp</th>
-							</tr>
-						</thead>
-						<tbody>
-							{#each Object.entries(major.subjects) as [subject, subjectValue]}
-								<tr>
-									<th class="text-center w-24">
-										<label>
-											<input
-												type="checkbox"
-												class="checkbox"
-												on:change={() => onChangeSelectSubjectClass(majorName, subject)}
-											/>
-										</label>
-									</th>
-									<td>
-										<div class="flex items-center space-x-3">
-											<div class="font-bold">{subject}</div>
-										</div>
-									</td>
-									<td class="w-40">
-										<select
-											class="select select-bordered select-sm w-full max-w-xs"
-											on:change={(e) => onChangeSelectSubjectClass(majorName, subject, e.target)}
-										>
-											<option selected>{defaultClassLabel}</option>
-											{#each Object.entries(subjectValue.classes) as [code, codeValue]}
-												<option>{code}</option>
-											{/each}
-										</select>
-									</td>
-								</tr>
-							{/each}
-						</tbody>
-					</table>
-				</div>
+	<label class="modal-box w-9/12 max-w-3xl relative rounded-lg" for="">
+		<label for="my-modal-4" class="btn btn-sm btn-circle sticky top-2 left-full z-10">✕</label>
+		<div class="w-full">
+			<div class="mb-8 w-full mx-auto">
+				<p class="mb-2">Học kỳ: <b><h3 class="inline">{title}</h3></b></p>
+				<p>Lưu ý:</p>
+				<ul class="list-disc ml-4 mb-2" style="padding-left: .125rem">
+					<li>Trang web chỉ hỗ trợ xếp lịch, không hỗ trợ đăng ký môn học trên web của trường.</li>
+					<li>
+						Các môn có tiết thực hành (có đuôi chấm theo sau) đã được thêm tiết lý thuyết vào.
+					</li>
+				</ul>
+				<p>Hướng dẫn:</p>
+				<ul class="list-disc ml-4 mb-2" style="padding-left: .125rem">
+					<li>
+						Check vào nút đăng ký các môn muốn học, sau đó chọn lớp cho từng môn, tiết nào bị trùng
+						thì sẽ chuyển sang màu đỏ, bấm vào ô trong lịch để xem những môn của tiết đấy.
+					</li>
+					<li>
+						Xem chi tiết thông tin của từng lớp trong file excel của trường, tải ở
+						<!-- svelte-ignore security-anchor-rel-noreferrer -->
+						<b><a href={download_path} target="_blank">đây</a></b>.
+					</li>
+				</ul>
+				<p><b>Chúc các bạn đăng ký đúng lớp đã chọn ❤</b></p>
 			</div>
-		{/each}
+			{#each Object.entries(calendar.calendarGroupByMajor).sort( (a, b) => a[0].localeCompare(b[0]) ) as [majorName, major]}
+				<!-- svelte-ignore a11y-no-noninteractive-tabindex -->
+				<div
+					class="collapse collapse-plus border border-base-300 bg-base-100 rounded-box w-full mx-auto mb-4"
+				>
+					<input type="checkbox" />
+					<div class="collapse-title text-xl font-medium">
+						<b><span>{majorName}</span></b>
+					</div>
+					<div class="collapse-content">
+						<table class="table table-compact w-full">
+							<!-- head -->
+							<thead>
+								<tr>
+									<th class="text-center w-24">Đăng ký</th>
+									<th>Tên môn</th>
+									<th class="pl-5 w-40">Lớp</th>
+								</tr>
+							</thead>
+							<tbody>
+								{#each Object.entries(major.subjects) as [subject, subjectValue], subjectIndex}
+									<tr>
+										<th class="text-center w-24">
+											<label>
+												<input
+													type="checkbox"
+													class="checkbox"
+													on:change={() => onChangeSelectSubjectClass(majorName, subject)}
+												/>
+											</label>
+										</th>
+										<td>
+											<div class="flex items-center space-x-3">
+												<span class="font-bold">{subject}</span>
+											</div>
+										</td>
+										<td class="w-40">
+											<select
+												class="select select-bordered select-sm w-full max-w-xs"
+												on:change={(e) => onChangeSelectSubjectClass(majorName, subject, e.target)}
+											>
+												<option selected>{defaultClassLabel}</option>
+												{#each Object.entries(subjectValue.classes) as [code, codeValue]}
+													<option>{code}</option>
+												{/each}
+											</select>
+										</td>
+									</tr>
+								{/each}
+							</tbody>
+						</table>
+					</div>
+				</div>
+			{/each}
+		</div>
 	</label>
 </label>
 
-<div class="overflow-x-auto" style="max-height: 60vh" data-simplebar>
-	<table class="table table-compact w-full table-fixed overflow-hidden">
+<div
+	id="calendar-table-container"
+	class="rounded-lg"
+	style="overflow: scroll, overflow-x: hidden; overflow-y: overlay; max-height: 31rem"
+>
+	<table id="calendar-table" class="table table-compact w-full table-fixed">
 		<tbody>
 			{#key triggerRerenderTable}
 				{#each calendar.dateList as date, dateIndex}
@@ -232,12 +265,14 @@
 						<SessionBar />
 					{/if}
 					<tr>
-						<td colspan="3" class="text-xs text-center">
-							{date.format('dddd[\n]DD/MM/YYYY').split('\n')[0]}<br />
-							{date.format('dddd[\n]DD/MM/YYYY').split('\n')[1]}
+						<td colspan="2" class="text-xs text-center">
+							<span class="font-bold text-lg">
+								{dayOfWeekMap[date.day()]}
+							</span><br />
+							{date.format('DD/MM/YYYY')}
 						</td>
 						{#each sessions as session}
-							{@const sessionContent = getSessionContent(date, session)}
+							{@const sessionContent = calendarTableContent[date.format('YYYY-MM-DD')][session]}
 							<td
 								class="px-2"
 								class:bg-neutral={checkSession(session) == 'afternoon'}
@@ -259,12 +294,12 @@
 										</button>
 										<div
 											tabindex="0"
-											class="dropdown-content menu p-2 text-neutral text-neural-focus rounded-lg"
+											class="dropdown-content menu p-4 mt-1 text-neutral text-neural-focus rounded-lg"
 											class:bg-primary={sessionContent.length == 1}
 											class:bg-accent-focus={sessionContent.length > 1}
 										>
 											{#each sessionContent as sessionContentDetail}
-												<li class="text-xs" class:text-base-100={sessionContent.length > 1}>
+												<li class="text-lg" class:text-base-100={sessionContent.length > 1}>
 													Môn: {sessionContentDetail.defaultName}
 												</li>
 											{/each}
@@ -291,3 +326,31 @@
 		</div>
 	</div>
 </div>
+
+<style>
+	#calendar-table-container::-webkit-scrollbar {
+		width: 0.75rem;
+	}
+
+	#calendar-table-container::-webkit-scrollbar-track {
+		background: transparent;
+	}
+
+	#calendar-table-container::-webkit-scrollbar-thumb {
+		background: #d3d3d3;
+		border-radius: 1rem;
+	}
+
+	#my-modal-4-content .modal-box::-webkit-scrollbar {
+		width: 0.75rem;
+	}
+
+	#my-modal-4-content .modal-box::-webkit-scrollbar-track {
+		background: transparent;
+	}
+
+	#my-modal-4-content .modal-box::-webkit-scrollbar-thumb {
+		background: #d3d3d3;
+		border-radius: 2rem;
+	}
+</style>

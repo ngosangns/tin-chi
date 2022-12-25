@@ -1,3 +1,5 @@
+<svelte:options immutable />
+
 <script lang="ts">
 	import '../app.css';
 	import Header from './Header.svelte';
@@ -7,11 +9,6 @@
 <svelte:head>
 	<title>Hỗ trợ xếp lịch tín chỉ KMA</title>
 	<meta name="description" content="KMA Tín Chỉ" />
-	<link
-		rel="shortcut icon"
-		href="https://avatars1.githubusercontent.com/u/46277436"
-		type="image/png"
-	/>
 </svelte:head>
 <div class="app">
 	<Header />

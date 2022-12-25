@@ -1,5 +1,5 @@
 <tr>
-	<th colspan="3" class="text-center bg-base-200">
+	<th colspan="2" class="text-center bg-base-200">
 		<div class="grid grid-cols-2 grid-rows-2">
 			<span />
 			<span>Tiết</span>
