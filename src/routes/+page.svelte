@@ -3,7 +3,6 @@
 	import type { CalendarData, RawCalendar, CalendarGroupBySession } from '$lib/ts/calendar';
 	import { processCalendar } from '$lib/ts/calendar';
 	import SessionBar from './SessionBar.svelte';
-	import { onMount } from 'svelte';
 
 	type SelectedCalendar = {
 		[subjectName: string]: {
@@ -125,16 +124,16 @@
 				openModel('Có lỗi xảy ra, không thể cập nhật dữ liệu!');
 			});
 	};
-
-	onMount(() => {
-		const calendarModal = document.getElementById('my-modal-4-content');
-		if (calendarModal) calendarModal.classList.remove('hidden');
-	});
 </script>
 
 <label for="my-modal-4" class="btn mb-2">Chọn lớp</label>
 <input type="checkbox" id="my-modal-4" class="modal-toggle" />
-<label id="my-modal-4-content" for="my-modal-4" class="modal cursor-pointer hidden">
+<label
+	id="my-modal-4-content"
+	for="my-modal-4"
+	class="modal cursor-pointer"
+	class:opacity-0={!isOpenModel}
+>
 	<label class="modal-box w-9/12 max-w-3xl relative rounded-lg" for="">
 		<label for="my-modal-4" class="btn btn-sm btn-circle sticky top-2 left-full z-10">✕</label>
 		<div class="w-full">
