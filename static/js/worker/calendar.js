@@ -6,7 +6,7 @@ const workerCalculateCalendarTableContent = (
 ) => {
     let isConflict = false;
     for (const date of dateList) {
-        const dateKey = date.format('YYYY-MM-DD');
+        const dateKey = date;
         const resultDate = calendarTableContent[dateKey];
         for (const session of sessions) {
             resultDate[session] = workerGetSessionContent(selectedCalendar, date, session);
@@ -14,12 +14,16 @@ const workerCalculateCalendarTableContent = (
         }
     }
     return {
+        calendarTableContent,
         isConflict
     };
 };
 
 const workerGetSessionContent = (selectedCalendar, date, session) => {
     const result = [];
+    let dateDayOfWeek = new Date(date).getDay() + 1;
+    if (dateDayOfWeek === 1) dateDayOfWeek = 8;
+
     for (const subjectName in selectedCalendar) {
         const currentSubject = selectedCalendar[subjectName];
         if (!currentSubject.isChecked || !currentSubject.class) continue;
@@ -28,16 +32,12 @@ const workerGetSessionContent = (selectedCalendar, date, session) => {
             {
                 if (
                     !(
-                        date.isBetween(
-                            currentSubjectClassDetail.startDate,
-                            currentSubjectClassDetail.endDate
-                        ) ||
-                        date.isSame(currentSubjectClassDetail.startDate) ||
-                        date.isSame(currentSubjectClassDetail.endDate)
+                        currentSubjectClassDetail.startDate <= date &&
+                        currentSubjectClassDetail.endDate >= date
                     )
                 )
                     continue;
-                if (date.day() + 1 !== currentSubjectClassDetail.dayOfWeek) continue;
+                if (dateDayOfWeek !== currentSubjectClassDetail.dayOfWeek) continue;
                 if (
                     session < currentSubjectClassDetail.startSession ||
                     session > currentSubjectClassDetail.endSession
@@ -54,6 +54,7 @@ const workerGetSessionContent = (selectedCalendar, date, session) => {
 };
 
 self.onmessage = (message) => {
+    message = message.data
     switch (message.type) {
         case 'calculateCalendarTableContent': {
             self.postMessage(

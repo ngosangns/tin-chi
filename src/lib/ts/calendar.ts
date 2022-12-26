@@ -1,13 +1,11 @@
-import moment from 'moment';
-
 export type RawCalendar = [string, number, string, string, string];
 export type CalendarData = {
 	calendar: Calendar[];
 	calendarGroupBySubjectName: CalendarGroupBySubjectName;
 	calendarGroupByMajor: CalendarGroupByMajor;
-	minTime: moment.Moment;
-	maxTime: moment.Moment;
-	dateList: moment.Moment[];
+	minTime: number;
+	maxTime: number;
+	dateList: number[];
 };
 export type Calendar = {
 	defaultName: string;
@@ -15,8 +13,8 @@ export type Calendar = {
 	nameOnly: string;
 	codeOnly: string;
 	dayOfWeek: number;
-	startDate: moment.Moment;
-	endDate: moment.Moment;
+	startDate: number;
+	endDate: number;
 	startSession: number;
 	endSession: number;
 };
@@ -45,8 +43,8 @@ export type CalendarGroupByClassDetail = {
 export type CalendarGroupBySession = [CalendarGroupBySessionDetail];
 export type CalendarGroupBySessionDetail = {
 	defaultName: string;
-	startDate: moment.Moment;
-	endDate: moment.Moment;
+	startDate: number;
+	endDate: number;
 	dayOfWeek: number;
 	startSession: number;
 	endSession: number;
@@ -94,17 +92,17 @@ export function processCalendar(rawData: Array<RawCalendar>): CalendarData {
 		}
 	}
 
-	let minTime: moment.Moment | null = null,
-		maxTime: moment.Moment | null = null;
-	const dateList: moment.Moment[] = [];
+	let minTime = 0,
+		maxTime = 0;
+	const dateList: number[] = [];
 
 	const calendar = rawData.map((v) => {
 		const defaultName = v[0].trim().replace(/(\s+|\t+)/gm, ' '),
 			match = defaultName.match(/(.+?\d) \((.+)\)$/),
 			nameOnly = match && match.length == 3 ? match[1] : '',
 			codeOnly = match && match.length == 3 ? match[2] : '',
-			startDate = v[2] ? moment('20' + v[2].split('/').reverse().join('-')) : null,
-			endDate = v[3] ? moment('20' + v[3].split('/').reverse().join('-')) : null,
+			startDate = v[2] ? Date.parse('20' + v[2].split('/').reverse().join('-')) : 0,
+			endDate = v[3] ? Date.parse('20' + v[3].split('/').reverse().join('-')) : 0,
 			match2 = v[4].split('->'),
 			startSession = match2.length == 2 ? parseInt(match2[0]) : 0,
 			endSession = match2.length == 2 ? parseInt(match2[1]) : 0;
@@ -124,8 +122,8 @@ export function processCalendar(rawData: Array<RawCalendar>): CalendarData {
 		}
 
 		// set min/max time
-		minTime = minTime ? (minTime.isAfter(startDate) ? startDate : minTime) : startDate;
-		maxTime = maxTime ? (maxTime.isBefore(endDate) ? endDate : maxTime) : endDate;
+		minTime = minTime ? (minTime > startDate ? startDate : minTime) : startDate;
+		maxTime = maxTime ? (maxTime < endDate ? endDate : maxTime) : endDate;
 
 		return <Calendar>{
 			defaultName: defaultName,
@@ -147,16 +145,16 @@ export function processCalendar(rawData: Array<RawCalendar>): CalendarData {
 		throw new Error(`invalid data - empty min/max time`);
 	}
 
-	for (const i = (minTime as moment.Moment).clone(); i.isSameOrBefore(maxTime); i.add(1, 'days')) {
-		dateList.push(i.clone());
+	for (let i = minTime; i <= maxTime; i += 86400000 /* 1 day */) {
+		dateList.push(i);
 	}
 
 	return <CalendarData>{
 		calendar,
 		calendarGroupByMajor,
 		calendarGroupBySubjectName,
-		minTime: minTime ? minTime : moment(0),
-		maxTime: maxTime ? maxTime : moment(0),
+		minTime: minTime ? minTime : 0,
+		maxTime: maxTime ? maxTime : 0,
 		dateList
 	};
 }

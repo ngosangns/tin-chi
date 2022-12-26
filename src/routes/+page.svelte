@@ -4,7 +4,6 @@
 	import { processCalendar } from '$lib/ts/calendar';
 	import SessionBar from './SessionBar.svelte';
 	import { onMount } from 'svelte';
-	import type { Moment } from 'moment';
 
 	type SelectedCalendar = {
 		[subjectName: string]: {
@@ -42,10 +41,10 @@
 		selectedCalendar: SelectedCalendar = {};
 	const sessions = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
 
-	const calendarTableContent: any = (() => {
+	let calendarTableContent: any = (() => {
 		const result: any = {};
 		for (const date of calendar.dateList) {
-			const dateKey = date.format('YYYY-MM-DD');
+			const dateKey = date;
 			result[dateKey] = {};
 			const resultDate = result[dateKey];
 			for (const session of sessions) resultDate[session] = [];
@@ -57,56 +56,6 @@
 		if (shift >= 1 && shift <= 6) return 'morning';
 		if (shift >= 7 && shift <= 12) return 'afternoon';
 		return 'evening';
-	};
-
-	const calculateCalendarTableContent = () => {
-		let isConflict = false;
-		for (const date of calendar.dateList) {
-			const dateKey = date.format('YYYY-MM-DD');
-			const resultDate = calendarTableContent[dateKey];
-			for (const session of sessions) {
-				resultDate[session] = getSessionContent(date, session);
-				if (resultDate[session].length > 1) isConflict = true;
-			}
-		}
-		return {
-			isConflict
-		};
-	};
-
-	const getSessionContent = (date: Moment, session: number) => {
-		const result = [];
-		for (const subjectName in selectedCalendar) {
-			const currentSubject = selectedCalendar[subjectName];
-			if (!currentSubject.isChecked || !currentSubject.class) continue;
-			for (const currentSubjectClassDetail of currentSubject.class.details) {
-				// filter
-				{
-					if (
-						!(
-							date.isBetween(
-								currentSubjectClassDetail.startDate,
-								currentSubjectClassDetail.endDate
-							) ||
-							date.isSame(currentSubjectClassDetail.startDate) ||
-							date.isSame(currentSubjectClassDetail.endDate)
-						)
-					)
-						continue;
-					if (date.day() + 1 !== currentSubjectClassDetail.dayOfWeek) continue;
-					if (
-						session < currentSubjectClassDetail.startSession ||
-						session > currentSubjectClassDetail.endSession
-					)
-						continue;
-				}
-				// add detail to result
-				result.push(currentSubjectClassDetail);
-				break;
-			}
-		}
-
-		return result;
 	};
 
 	const onChangeSelectSubjectClass = async (
@@ -150,13 +99,31 @@
 		if (!selectClassEvent && !selectedCalendar[_subjectName].class) return;
 		if (selectClassEvent && !selectedCalendar[_subjectName].isChecked) return;
 
-		const result = calculateCalendarTableContent();
+		new Promise((resolve, reject) => {
+			const worker = new Worker('/js/worker/calendar.js');
+			worker.onmessage = (res: { data: any }) => resolve(res.data);
+			worker.onerror = (err: any) => reject(err);
+			worker.postMessage({
+				type: 'calculateCalendarTableContent',
+				data: {
+					calendarTableContent,
+					dateList: calendar.dateList,
+					sessions,
+					selectedCalendar
+				}
+			});
+		})
+			.then((result: any) => {
+				if (result) {
+					calendarTableContent = result.calendarTableContent;
+					if (result.isConflict && !isOpenModel) openModel('Cảnh báo trùng lịch!');
+				}
 
-		if (result && result.isConflict && !isOpenModel) {
-			openModel('Cảnh báo trùng lịch!');
-		}
-
-		triggerRerenderTable = !triggerRerenderTable;
+				if (isOpenModel) setTimeout(() => (triggerRerenderTable = !triggerRerenderTable), 150);
+			})
+			.catch((e) => {
+				openModel('Có lỗi xảy ra, không thể cập nhật dữ liệu!');
+			});
 	};
 
 	onMount(() => {
@@ -261,18 +228,19 @@
 		<tbody>
 			{#key triggerRerenderTable}
 				{#each calendar.dateList as date, dateIndex}
-					{#if date.day() === 1}
+					{@const dateInstance = new Date(date)}
+					{#if dateInstance.getDay() === 1}
 						<SessionBar />
 					{/if}
 					<tr>
 						<td colspan="2" class="text-xs text-center">
 							<span class="font-bold text-lg">
-								{dayOfWeekMap[date.day()]}
+								{dayOfWeekMap[dateInstance.getDay()]}
 							</span><br />
-							{date.format('DD/MM/YYYY')}
+							{dateInstance.toISOString().slice(0, 10).split('-').reverse().join('/')}
 						</td>
 						{#each sessions as session}
-							{@const sessionContent = calendarTableContent[date.format('YYYY-MM-DD')][session]}
+							{@const sessionContent = calendarTableContent[date][session]}
 							<td
 								class="px-2"
 								class:bg-neutral={checkSession(session) == 'afternoon'}
