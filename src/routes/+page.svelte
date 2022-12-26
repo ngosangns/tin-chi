@@ -4,6 +4,10 @@
 	import { processCalendar } from '$lib/ts/calendar';
 	import SessionBar from './SessionBar.svelte';
 
+	// Configure
+	const download_path = '/calendar-excel/2021-2022-2.xlsx';
+	const title = 'Kì 2 Năm học 2021 - 2022';
+
 	type SelectedCalendar = {
 		[subjectName: string]: {
 			isChecked: boolean;
@@ -13,9 +17,6 @@
 			} | null;
 		};
 	};
-
-	const download_path = '/calendar-excel/2021-2022-2.xlsx';
-	const title = 'Kì 2 Năm học 2021 - 2022';
 
 	const defaultClassLabel = 'Chọn lớp';
 	let triggerRerenderTable = false;
@@ -98,7 +99,11 @@
 		if (!selectClassEvent && !selectedCalendar[_subjectName].class) return;
 		if (selectClassEvent && !selectedCalendar[_subjectName].isChecked) return;
 
-		new Promise((resolve, reject) => {
+		calculateCalendarTableContent();
+	};
+
+	const calculateCalendarTableContent = async () => {
+		return new Promise((resolve, reject) => {
 			const worker = new Worker('/js/worker/calendar.js');
 			worker.onmessage = (res: { data: any }) => resolve(res.data);
 			worker.onerror = (err: any) => reject(err);
@@ -124,16 +129,18 @@
 				openModel('Có lỗi xảy ra, không thể cập nhật dữ liệu!');
 			});
 	};
+
+	let triggerRerenderClass = false;
+	const resetClass = () => {
+		for (const key in selectedCalendar) delete selectedCalendar[key];
+		triggerRerenderClass = !triggerRerenderClass;
+		calculateCalendarTableContent();
+	};
 </script>
 
-<label for="my-modal-4" class="btn mb-2">Chọn lớp</label>
+<label class="btn mb-2" for="my-modal-4">Chọn lớp</label>
 <input type="checkbox" id="my-modal-4" class="modal-toggle" />
-<label
-	id="my-modal-4-content"
-	for="my-modal-4"
-	class="modal cursor-pointer"
-	class:opacity-0={!isOpenModel}
->
+<label id="my-modal-4-content" for="my-modal-4" class="modal cursor-pointer">
 	<label class="modal-box w-9/12 max-w-3xl relative rounded-lg" for="">
 		<label for="my-modal-4" class="btn btn-sm btn-circle sticky top-2 left-full z-10">✕</label>
 		<div class="w-full">
@@ -160,60 +167,64 @@
 				</ul>
 				<p><b>Chúc các bạn đăng ký đúng lớp đã chọn ❤</b></p>
 			</div>
-			{#each Object.entries(calendar.calendarGroupByMajor).sort( (a, b) => a[0].localeCompare(b[0]) ) as [majorName, major]}
-				<!-- svelte-ignore a11y-no-noninteractive-tabindex -->
-				<div
-					class="collapse collapse-plus border border-base-300 bg-base-100 rounded-box w-full mx-auto mb-4"
-				>
-					<input type="checkbox" />
-					<div class="collapse-title text-xl font-medium">
-						<b><span>{majorName}</span></b>
-					</div>
-					<div class="collapse-content">
-						<table class="table table-compact w-full">
-							<!-- head -->
-							<thead>
-								<tr>
-									<th class="text-center w-24">Đăng ký</th>
-									<th>Tên môn</th>
-									<th class="pl-5 w-40">Lớp</th>
-								</tr>
-							</thead>
-							<tbody>
-								{#each Object.entries(major.subjects) as [subject, subjectValue], subjectIndex}
+			<button class="btn my-4" on:click={resetClass}>Reset</button>
+			{#key triggerRerenderClass}
+				{#each Object.entries(calendar.calendarGroupByMajor).sort( (a, b) => a[0].localeCompare(b[0]) ) as [majorName, major]}
+					<!-- svelte-ignore a11y-no-noninteractive-tabindex -->
+					<div
+						class="collapse collapse-plus border border-base-300 bg-base-100 rounded-box w-full mx-auto mb-4"
+					>
+						<input type="checkbox" />
+						<div class="collapse-title text-xl font-medium">
+							<b><span>{majorName}</span></b>
+						</div>
+						<div class="collapse-content">
+							<table class="table table-compact w-full">
+								<!-- head -->
+								<thead>
 									<tr>
-										<th class="text-center w-24">
-											<label>
-												<input
-													type="checkbox"
-													class="checkbox"
-													on:change={() => onChangeSelectSubjectClass(majorName, subject)}
-												/>
-											</label>
-										</th>
-										<td>
-											<div class="flex items-center space-x-3">
-												<span class="font-bold">{subject}</span>
-											</div>
-										</td>
-										<td class="w-40">
-											<select
-												class="select select-bordered select-sm w-full max-w-xs"
-												on:change={(e) => onChangeSelectSubjectClass(majorName, subject, e.target)}
-											>
-												<option selected>{defaultClassLabel}</option>
-												{#each Object.entries(subjectValue.classes) as [code, codeValue]}
-													<option>{code}</option>
-												{/each}
-											</select>
-										</td>
+										<th class="text-center w-24">Đăng ký</th>
+										<th>Tên môn</th>
+										<th class="pl-5 w-40">Lớp</th>
 									</tr>
-								{/each}
-							</tbody>
-						</table>
+								</thead>
+								<tbody>
+									{#each Object.entries(major.subjects) as [subject, subjectValue], subjectIndex}
+										<tr>
+											<th class="text-center w-24">
+												<label>
+													<input
+														type="checkbox"
+														class="checkbox"
+														on:change={() => onChangeSelectSubjectClass(majorName, subject)}
+													/>
+												</label>
+											</th>
+											<td>
+												<div class="flex items-center space-x-3">
+													<span class="font-bold">{subject}</span>
+												</div>
+											</td>
+											<td class="w-40">
+												<select
+													class="select select-bordered select-sm w-full max-w-xs"
+													on:change={(e) =>
+														onChangeSelectSubjectClass(majorName, subject, e.target)}
+												>
+													<option selected>{defaultClassLabel}</option>
+													{#each Object.entries(subjectValue.classes) as [code, codeValue]}
+														<option>{code}</option>
+													{/each}
+												</select>
+											</td>
+										</tr>
+									{/each}
+								</tbody>
+							</table>
+						</div>
 					</div>
-				</div>
-			{/each}
+				{/each}
+			{/key}
 		</div>
 	</label>
 </label>
