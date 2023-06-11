@@ -1,6 +1,8 @@
-<footer class="text-center text-sm">
-	<span>KMA Tín Chỉ v2022.12 - ngosangns</span>
-</footer>
+<template>
+    <footer class="text-center text-sm">
+        <span>KMA Tín Chỉ v2022.12 - ngosangns</span>
+    </footer>
+</template>
 
 <style>
 	footer {

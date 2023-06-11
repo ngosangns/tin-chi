@@ -1,44 +1,36 @@
 {
-	"name": "tin-chi-next",
-	"version": "0.0.1",
-	"scripts": {
-		"dev": "vite dev",
-		"build": "vite build",
-		"preview": "vite preview",
-		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
-		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
-		"lint": "prettier --plugin-search-dir . --check . && eslint .",
-		"format": "prettier --plugin-search-dir . --write ."
-	},
-	"devDependencies": {
-		"@fontsource/fira-mono": "^4.5.10",
-		"@neoconfetti/svelte": "^1.0.0",
-		"@sveltejs/adapter-auto": "^1.0.0",
-		"@sveltejs/adapter-static": "^1.0.0",
-		"@sveltejs/kit": "^1.0.0",
-		"@tsconfig/svelte": "^3.0.0",
-		"@types/cookie": "^0.5.1",
-		"@typescript-eslint/eslint-plugin": "^5.45.0",
-		"@typescript-eslint/parser": "^5.45.0",
-		"autoprefixer": "^10.4.13",
-		"eslint": "^8.28.0",
-		"eslint-config-prettier": "^8.5.0",
-		"eslint-plugin-svelte3": "^4.0.0",
-		"postcss": "^8.4.20",
-		"prettier": "^2.8.0",
-		"prettier-plugin-svelte": "^2.8.1",
-		"svelte": "^3.54.0",
-		"svelte-check": "^2.10.3",
-		"svelte-preprocess": "^5.0.0",
-		"tailwindcss": "^3.2.4",
-		"tslib": "^2.4.1",
-		"typescript": "^4.9.4",
-		"vite": "^4.0.0"
-	},
-	"type": "module",
-	"dependencies": {
-		"daisyui": "^2.46.0",
-		"jquery": "^3.6.3",
-		"moment": "^2.29.4"
-	}
+  "name": "tinchi",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "run-p type-check build-only",
+    "preview": "vite preview",
+    "build-only": "vite build",
+    "type-check": "vue-tsc --noEmit -p tsconfig.app.json --composite false",
+    "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix --ignore-path .gitignore",
+    "format": "prettier --write src/"
+  },
+  "dependencies": {
+    "axios": "^1.4.0",
+    "vue": "^3.3.2"
+  },
+  "devDependencies": {
+    "@rushstack/eslint-patch": "^1.2.0",
+    "@tsconfig/node18": "^2.0.1",
+    "@types/node": "^18.16.8",
+    "@vitejs/plugin-vue": "^4.2.3",
+    "@vue/tsconfig": "^0.4.0",
+    "autoprefixer": "^10.4.14",
+    "daisyui": "^3.1.0",
+    "eslint": "^8.39.0",
+    "eslint-plugin-vue": "^9.11.0",
+    "npm-run-all": "^4.1.5",
+    "postcss": "^8.4.24",
+    "prettier": "^2.8.8",
+    "tailwindcss": "^3.3.2",
+    "typescript": "~5.0.4",
+    "vite": "^4.3.5",
+    "vue-tsc": "^1.6.4"
+  }
 }
