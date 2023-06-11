@@ -1,46 +1,26 @@
-# tinchi
+## Tool hỗ trợ xếp lịch cho các đồng chí KMA
 
-This template should help get you started developing with Vue 3 in Vite.
+- Demo: [https://tin-chi-ngosangns.web.app](https://tin-chi-ngosangns.web.app/)
 
-## Recommended IDE Setup
+- Công cụ cần thiết:
+  - Node.js
+  - npm
+  - pnpm
 
-[VSCode](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur) + [TypeScript Vue Plugin (Volar)](https://marketplace.visualstudio.com/items?itemName=Vue.vscode-typescript-vue-plugin).
+### Hướng dẫn tự deploy tool và cập nhật lịch
 
-## Type Support for `.vue` Imports in TS
+1. Clone repo về và chuẩn bị file excel tín chỉ của trường cấp.
+2. Làm theo các bước trong [video hướng dẫn này](https://www.youtube.com/watch?v=rQEv9uwFc18).
+   - _CHÚ Ý: Bản update mới không cần làm bước **thêm tiết lý thuyết vào tiết thực hành** như trong video hướng dẫn nữa nhé!_
+   - _CHÚ Ý: Bản update mới thay file `mon.js` thành `src/lib/js/data.ts` nhé!_
+3. Copy file excel vào thư mục `static/calendar-excel` của project và đổi tên theo định dạng như các file excel khác để người xem có thể download file excel tín chỉ về xem.
+4. Cập nhật lại thông tin download excel và tiêu đề trong file `src/routes/+page.svelte`
+5. Build project:
 
-TypeScript cannot handle type information for `.vue` imports by default, so we replace the `tsc` CLI with `vue-tsc` for type checking. In editors, we need [TypeScript Vue Plugin (Volar)](https://marketplace.visualstudio.com/items?itemName=Vue.vscode-typescript-vue-plugin) to make the TypeScript language service aware of `.vue` types.
-
-If the standalone TypeScript plugin doesn't feel fast enough to you, Volar has also implemented a [Take Over Mode](https://github.com/johnsoncodehk/volar/discussions/471#discussioncomment-1361669) that is more performant. You can enable it by the following steps:
-
-1. Disable the built-in TypeScript Extension
-    1) Run `Extensions: Show Built-in Extensions` from VSCode's command palette
-    2) Find `TypeScript and JavaScript Language Features`, right click and select `Disable (Workspace)`
-2. Reload the VSCode window by running `Developer: Reload Window` from the command palette.
-
-## Customize configuration
-
-See [Vite Configuration Reference](https://vitejs.dev/config/).
-
-## Project Setup
-
-```sh
-npm install
+```
+pnpm install
+pnpm build
 ```
 
-### Compile and Hot-Reload for Development
-
-```sh
-npm run dev
-```
-
-### Type-Check, Compile and Minify for Production
-
-```sh
-npm run build
-```
-
-### Lint with [ESLint](https://eslint.org/)
-
-```sh
-npm run lint
-```
+8. Up code đã build trong thư mục `build` lên một hosting nào đó và xếp lịch thôi! :D
+9. Nhớ để nguyên credit tác giả nhé :)
