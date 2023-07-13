@@ -1,5 +1,7 @@
 ## Tool hỗ trợ xếp lịch cho các đồng chí KMA
 
+Thông báo: Hiện nay tool đã được gộp vào dự án KIT Manager của Câu lạc bộ lập trình Học viện Kỹ thuật mật mã. Các bạn có thể follow dự án KIT Manager ở đây: [https://github.com/KIT-Club/kit-manager](https://github.com/KIT-Club/kit-manager).
+
 - Demo: [https://tin-chi-ngosangns.web.app](https://tin-chi-ngosangns.web.app/)
 
 - Công cụ cần thiết:
