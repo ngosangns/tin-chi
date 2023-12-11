@@ -98,7 +98,7 @@ export function processCalendar(rawData: Array<RawCalendar>): CalendarData {
 
 	const calendar = rawData.map((v) => {
 		const defaultName = v[0].trim().replace(/(\s+|\t+)/gm, ' '),
-			match = defaultName.match(/(.+?\d) \((.+)\)$/),
+			match = defaultName.match(/^(.+?)\((.+)\)$/),
 			nameOnly = match && match.length == 3 ? match[1] : '',
 			codeOnly = match && match.length == 3 ? match[2] : '',
 			startDate = v[2] ? Date.parse('20' + v[2].split('/').reverse().join('-')) : 0,

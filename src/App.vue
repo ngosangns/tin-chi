@@ -19,7 +19,6 @@ type SelectedCalendar = {
 
 const sessions = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
 const dayOfWeekMap = ['Chủ Nhật', 'Hai', 'Ba', 'Tư', 'Năm', 'Sáu', 'Bảy']
-const download_path = `https://kit-api.ngosangns.com/storage/tinchi.xlsx?timestamp=${new Date().getTime()}`
 const defaultClassLabel = 'Chọn lớp'
 const loading = ref(true)
 const data: any = reactive({})
@@ -31,10 +30,12 @@ const triggerRerenderTable = ref(false)
 const isOpenModel = ref(false)
 const modalMessage = ref('')
 const modalBtn: any = ref()
+const jsonPath = import.meta.env.VITE_REMOTE_JSON_FILE ?? './tinchi.json'+`?timestamp=${new Date().getTime()}`
+const excelPath = import.meta.env.VITE_REMOTE_EXCEL_FILE ?? './tinchi.xlsx'+`?timestamp=${new Date().getTime()}`
 
 const fetchData = async function () {
     try {
-        const response: any = await get(`https://kit-api.ngosangns.com/storage/tinchi.json?timestamp=${new Date().getTime()}`, {
+        const response: any = await get(jsonPath, {
             responseType: 'json',
         })
         Object.assign(data, response.data)
@@ -47,6 +48,7 @@ const fetchData = async function () {
         }
         Object.assign(calendarTableContent, result)
     } catch (e: any) {
+        console.error(e)
         modalMessage.value = e.message
     } finally {
         loading.value = false
@@ -104,7 +106,7 @@ const onChangeSelectSubjectClass = async (
 
 const calculateCalendarTableContent = async () => {
     return new Promise((resolve, reject) => {
-        const worker = new Worker('/calendar.js')
+        const worker = new Worker('./calendar.js')
         worker.onmessage = (res: { data: any }) => resolve(res.data)
         worker.onerror = (err: any) => reject(err)
         worker.postMessage({
@@ -169,14 +171,14 @@ const resetClass = () => {
                                 </li>
                                 <li>
                                     Xem chi tiết thông tin của từng lớp trong file excel của trường, tải ở
-                                    <b><a :href="download_path" target="_blank">đây</a></b>.
+                                    <b><a :href="excelPath" target="_blank">đây</a></b>.
                                 </li>
                             </ul>
                             <p><b>Chúc các bạn đăng ký đúng lớp đã chọn ❤</b></p>
                         </div>
                         <button class="btn my-4" @click="resetClass">Reset</button>
                         <template :key="triggerRerenderClass"
-                            v-for="[majorName, major] in Object.entries(calendar?.calendarGroupByMajor).sort((a, b) => a[0].localeCompare(b[0]))">
+                            v-for="[majorName, major] in Object.entries(calendar?.calendarGroupByMajor || []).sort((a, b) => a[0].localeCompare(b[0]))">
                             <div
                                 class="collapse collapse-plus border border-base-300 bg-base-100 rounded-box w-full mx-auto mb-4">
                                 <input type="checkbox" />
