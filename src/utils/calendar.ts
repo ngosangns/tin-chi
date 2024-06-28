@@ -107,7 +107,7 @@ export function processCalendar(rawData: Array<RawCalendar>): CalendarData {
       startSession = match2.length == 2 ? parseInt(match2[0]) : 0,
       endSession = match2.length == 2 ? parseInt(match2[1]) : 0
 
-    let majors: string[] | null
+    let majors: string[] | null = null
     let _majors: string = codeOnly.split('.')[0]
 
     //standardlization before process
