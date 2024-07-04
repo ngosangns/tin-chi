@@ -1,0 +1,52 @@
+name: deploy_vue_to_firebase
+
+on:
+  push:
+    branches: master
+  pull_request:
+    branches: master
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@master
+      - uses: actions/setup-node@master
+        with:
+          node-version: '20.x'
+      - name: Install pnpm
+        run: npm i -g pnpm
+      - name: Install Dependencies
+        run: pnpm install
+      - name: Build
+        run: pnpm build
+        env:
+          REMOTE_JSON_FILE: https://raw.githubusercontent.com/ngosangns/tin-chi/master/public/tinchi.json
+          REMOTE_EXCEL_FILE: https://raw.githubusercontent.com/ngosangns/tin-chi/master/public/tinchi.xlsx
+      - name: Archive Production Artifact
+        uses: actions/upload-artifact@master
+        with:
+          name: dist
+          path: dist
+  deploy:
+    name: Deploy
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@master
+      - name: Download Artifact
+        uses: actions/download-artifact@master
+        with:
+          name: dist
+          path: dist
+      - name: Deploy to Firebase
+        uses: w9jds/firebase-action@master
+        with:
+          args: deploy --only hosting
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+          PROJECT_ID: tin-chi-ngosangns
+          PROJECT_PATH: ./dist
