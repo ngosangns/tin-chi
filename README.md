@@ -55,3 +55,21 @@ pnpm build
     ]
 }
 ```
+
+**ĐÓNG GÓP THỜI KHÓA BIỂU MỚI CHO DỰ ÁN:**
+
+Do mình hiện không còn hoạt động nhiều ở trường nên không có nhiều thời gian maintain cho dự án này do mục tiêu đầu tiên mình làm đó là phục vụ bản thân. Do đó nếu các bạn thấy tool hữu ích thì có thể đóng góp/cập nhật thời khóa biểu mỗi kì nhé! Có 2 cách đóng góp:
+
+1. Clone dự án về, cập nhật các file thời khóa biểu và up lên hosting khác sử dụng.
+2. Hoặc bằng cách đơn giản hơn:
+    - Fork dự án này về account Github của các bạn.
+    - Trong trang web repository mà các bạn vừa fork về, nhấn dấu chấm (.). Github sẽ redirect sang VSCode web version chứa sẵn repository đó.
+    - Cập nhật nội dung file `public/tinchi.json` và `public/tinchi.xlsx`.
+    - Commit thay đổi.
+    - Vào link https://github.com/ngosangns/tin-chi/compare và tạo pull request.
+    - Khi active mình sẽ review và merge thay đổi.
+    - Sau khi pull request đã được merge, các bạn vào link https://tin-chi-ngosangns.web.app sẽ thấy nội dung đã được cập nhật.
+
+---
+
+Cảm ơn các bạn đã ủng hộ sản phẩm!
