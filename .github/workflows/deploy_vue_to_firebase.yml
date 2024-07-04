@@ -21,8 +21,8 @@ jobs:
         run: npm i -g pnpm
       - name: Install Dependencies
         run: pnpm install
-      - name: Create environment variables
-        run: cp .env.example .env
+      # - name: Create environment variables
+      #   run: cp .env.example .env
       - name: Build
         run: pnpm build
       - name: Archive Production Artifact
