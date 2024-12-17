@@ -20,7 +20,7 @@ jobs:
       # - name: Create environment variables
       #   run: cp .env.example .env
       - name: Build
-        run: npm build
+        run: npm run build
       - name: Archive Production Artifact
         uses: actions/upload-artifact@master
         with:
