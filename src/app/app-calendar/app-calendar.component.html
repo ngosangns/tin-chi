@@ -1,0 +1,57 @@
+<app-header></app-header>
+
+<main class="app">
+  <div *ngIf="loading$ | async" class="text-center">
+    <span class="loading loading-dots loading-lg"></span>
+  </div>
+  <div *ngIf="!(loading$ | async)">
+    <label class="btn mb-2" for="my-modal-4">Chọn lớp</label>
+    <input type="checkbox" id="my-modal-4" class="modal-toggle" />
+    <label
+      id="my-modal-4-content"
+      for="my-modal-4"
+      class="modal cursor-pointer"
+    >
+      <label class="modal-box w-9/12 max-w-3xl relative rounded-lg" for="">
+        <label
+          for="my-modal-4"
+          class="btn btn-sm btn-circle sticky top-2 left-full z-10"
+          >✕</label
+        >
+        <app-class-info
+          [selectedCalendar]="selectedCalendar"
+          [data$]="data$"
+          [calendarGroupByMajor]="calendarGroupByMajor"
+          (resetClass)="resetClass()"
+          (onChangeSelectSubjectClass)="
+            onChangeSelectSubjectClass(
+              $event.majorName,
+              $event.subjectName,
+              $event.selectClassEvent
+            )
+          "
+        ></app-class-info>
+      </label>
+    </label>
+
+    <app-calendar
+      [calendar$]="calendar$"
+      [calendarTableContent$]="calendarTableContent$"
+    ></app-calendar>
+
+    <label ref="modalBtn" for="my-modal" class="btn hidden">Open modal</label>
+    <input type="checkbox" id="my-modal" class="modal-toggle" />
+    <div class="modal">
+      <div class="modal-box">
+        <h3 class="font-bold text-lg text-center">
+          {{ modalMessage$ | async }}
+        </h3>
+        <div class="modal-action justify-center">
+          <label for="my-modal" class="btn" (click)="closeModel()">OK</label>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<app-footer></app-footer>

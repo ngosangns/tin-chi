@@ -1,0 +1,93 @@
+<div class="w-full">
+  <div class="mb-8 w-full mx-auto">
+    <p class="mb-2">
+      Học kỳ:
+      <b>
+        <h3 class="inline">{{ (data$ | async)?.title }}</h3>
+      </b>
+    </p>
+    <p>Lưu ý:</p>
+    <ul class="list-disc ml-4 mb-2" style="padding-left: 0.125rem">
+      <li>
+        Trang web chỉ hỗ trợ xếp lịch, không hỗ trợ đăng ký môn học trên web của
+        trường.
+      </li>
+      <li>
+        Các môn có tiết thực hành (có đuôi chấm theo sau) đã được thêm tiết lý
+        thuyết vào.
+      </li>
+    </ul>
+    <p>Hướng dẫn:</p>
+    <ul class="list-disc ml-4 mb-2" style="padding-left: 0.125rem">
+      <li>
+        Check vào nút đăng ký các môn muốn học, sau đó chọn lớp cho từng môn,
+        tiết nào bị trùng thì sẽ chuyển sang màu đỏ, bấm vào ô trong lịch để xem
+        những môn của tiết đấy.
+      </li>
+      <li>
+        Xem chi tiết thông tin của từng lớp trong file excel của trường, tải ở
+        <b><a [href]="excelPath" target="_blank">đây</a></b
+        >.
+      </li>
+    </ul>
+    <p><b>Chúc các bạn đăng ký đúng lớp đã chọn ❤</b></p>
+  </div>
+  <button class="btn my-4" (click)="resetClass()">Reset</button>
+  <div
+    *ngFor="let item of calendarGroupByMajor"
+    class="collapse collapse-plus border border-base-300 bg-base-100 rounded-box w-full mx-auto mb-4"
+  >
+    <input type="checkbox" />
+    <div class="collapse-title text-xl font-medium">
+      <b>
+        <span>{{ item[0] }}</span>
+      </b>
+    </div>
+    <div class="collapse-content">
+      <table class="table table-compact w-full">
+        <thead>
+          <tr>
+            <th class="text-center w-24">Đăng ký</th>
+            <th>Tên môn</th>
+            <th class="pl-5 w-40">Lớp</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let subject of item[1].subjects | keyvalue">
+            <th class="text-center w-24">
+              <label>
+                <input
+                  type="checkbox"
+                  class="checkbox"
+                  (change)="onChangeSelectSubjectClass(item[0], subject.key)"
+                />
+              </label>
+            </th>
+            <td>
+              <div class="flex items-center space-x-3">
+                <span class="font-bold">{{ subject.key }}</span>
+              </div>
+            </td>
+            <td class="w-40">
+              <select
+                class="select select-bordered select-sm w-full max-w-xs"
+                (change)="
+                  onChangeSelectSubjectClass(
+                    item[0],
+                    subject.key,
+                    $event.target
+                  )
+                "
+              >
+                <option selected>{{ defaultClassLabel }}</option>
+                <option *ngFor="let code of subject.value.classes | keyvalue">
+                  {{ code.key }}
+                </option>
+              </select>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

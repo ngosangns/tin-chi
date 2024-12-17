@@ -1,0 +1,42 @@
+.app {
+  display: flex;
+  flex-direction: column;
+}
+
+main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 1rem;
+  width: 100%;
+  max-width: 72rem;
+  min-width: 60rem;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+#calendar-table-container::-webkit-scrollbar {
+  width: 0.75rem;
+}
+
+#calendar-table-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+#calendar-table-container::-webkit-scrollbar-thumb {
+  background: #d3d3d3;
+  border-radius: 1rem;
+}
+
+#my-modal-4-content .modal-box::-webkit-scrollbar {
+  width: 0.75rem;
+}
+
+#my-modal-4-content .modal-box::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+#my-modal-4-content .modal-box::-webkit-scrollbar-thumb {
+  background: #d3d3d3;
+  border-radius: 2rem;
+}
