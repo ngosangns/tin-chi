@@ -1,4 +1,4 @@
-name: deploy_vue_to_firebase
+name: deploy_angular_to_firebase
 
 on:
   push:
