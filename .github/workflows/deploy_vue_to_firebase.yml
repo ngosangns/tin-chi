@@ -17,18 +17,14 @@ jobs:
       - uses: actions/setup-node@master
         with:
           node-version: "20.x"
-      - name: Install pnpm
-        run: npm i -g pnpm
-      - name: Install Dependencies
-        run: pnpm install
       # - name: Create environment variables
       #   run: cp .env.example .env
       - name: Build
-        run: pnpm build
+        run: npm build
       - name: Archive Production Artifact
         uses: actions/upload-artifact@master
         with:
-          name: dist
+          name: dist/tin-chi/browser
           path: dist/tin-chi/browser
   deploy:
     name: Deploy
@@ -40,7 +36,7 @@ jobs:
       - name: Download Artifact
         uses: actions/download-artifact@master
         with:
-          name: dist
+          name: dist/tin-chi/browser
           path: dist/tin-chi/browser
       - name: Deploy to Firebase
         uses: w9jds/firebase-action@master
