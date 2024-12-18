@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ViewChild } from '@angular/core';
 import { BehaviorSubject, map, Observable, Subscription } from 'rxjs';
 import { HeaderComponent } from '../header/header.component';
 import { FooterComponent } from '../footer/footer.component';
@@ -47,12 +47,11 @@ export class AppCalendarComponent {
   readonly loading$: BehaviorSubject<boolean>;
   readonly data$: BehaviorSubject<any>;
   readonly calendar$: BehaviorSubject<CalendarData | undefined>;
-  readonly selectedCalendar: SelectedCalendar = {};
+  readonly selectedCalendar$: BehaviorSubject<SelectedCalendar> =
+    new BehaviorSubject({});
   readonly calendarTableContent$: BehaviorSubject<any>;
-  readonly triggerRerenderClass = new BehaviorSubject<boolean>(false);
-  readonly isOpenModel = new BehaviorSubject<boolean>(false);
+  isOpenModel = false;
   readonly modalMessage$ = new BehaviorSubject<string>('');
-  readonly modalBtn = new BehaviorSubject<any>(null);
 
   get calendarGroupByMajor$() {
     return this.calendar$.pipe(
@@ -114,13 +113,12 @@ export class AppCalendarComponent {
   }
 
   openModel(message: string): void {
-    this.isOpenModel.next(true);
+    this.isOpenModel = true;
     this.modalMessage$.next(message);
-    this.modalBtn.value.click();
   }
 
   closeModel(): void {
-    this.isOpenModel.next(false);
+    this.isOpenModel = false;
   }
 
   checkSession(shift: number): 'morning' | 'afternoon' | 'evening' {
@@ -136,23 +134,23 @@ export class AppCalendarComponent {
   ): Promise<void> {
     const _subjectName = majorName + '---' + subjectName;
     const classCode = '' + selectClassEvent?.value;
-
+    const selectedCalendar = this.selectedCalendar$.value;
     // check subject
-    if (!this.selectedCalendar[_subjectName]) {
-      this.selectedCalendar[_subjectName] = { isChecked: false, class: null };
+    if (!selectedCalendar[_subjectName]) {
+      selectedCalendar[_subjectName] = { isChecked: false, class: null };
     }
     if (!selectClassEvent) {
-      this.selectedCalendar[_subjectName].isChecked =
-        !this.selectedCalendar[_subjectName].isChecked;
+      selectedCalendar[_subjectName].isChecked =
+        !selectedCalendar[_subjectName].isChecked;
     } else {
       // check class
       if (classCode == this.defaultClassLabel) {
-        this.selectedCalendar[_subjectName].class = null;
-        if (!this.selectedCalendar[_subjectName].isChecked) {
-          delete this.selectedCalendar[_subjectName];
+        selectedCalendar[_subjectName].class = null;
+        if (!selectedCalendar[_subjectName].isChecked) {
+          delete selectedCalendar[_subjectName];
         }
       }
-      this.selectedCalendar[_subjectName].class = {
+      selectedCalendar[_subjectName].class = {
         code: classCode,
         details:
           this.calendar$.value!.calendarGroupBySubjectName[subjectName].classes[
@@ -161,10 +159,11 @@ export class AppCalendarComponent {
       };
     }
 
-    // skip rerender
-    if (!selectClassEvent && !this.selectedCalendar[_subjectName].class) return;
-    if (selectClassEvent && !this.selectedCalendar[_subjectName].isChecked)
-      return;
+    this.selectedCalendar$.next(selectedCalendar);
+
+    // skip recalculate
+    if (!selectClassEvent && !selectedCalendar[_subjectName].class) return;
+    if (selectClassEvent && !selectedCalendar[_subjectName].isChecked) return;
 
     await this.calculateCalendarTableContent();
   }
@@ -181,7 +180,7 @@ export class AppCalendarComponent {
             calendarTableContent: this.calendarTableContent$.value,
             dateList: this.calendar$.value!.dateList,
             sessions: this.sessions,
-            selectedCalendar: this.selectedCalendar,
+            selectedCalendar: this.selectedCalendar$.value,
           },
         });
       });
@@ -194,7 +193,7 @@ export class AppCalendarComponent {
           this.calendarTableContent$.value,
           result.calendarTableContent
         );
-        if (result.isConflict && !this.isOpenModel.value) {
+        if (result.isConflict && !this.isOpenModel) {
           this.openModel('Cảnh báo trùng lịch!');
         }
       }
@@ -204,7 +203,7 @@ export class AppCalendarComponent {
   }
 
   resetClass(): void {
-    for (const key in this.selectedCalendar) delete this.selectedCalendar[key];
+    this.selectedCalendar$.next({});
     this.calculateCalendarTableContent();
   }
 }

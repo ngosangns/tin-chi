@@ -92,7 +92,7 @@
               </button>
               <ul
                 tabindex="0"
-                class="dropdown-content menu p-4 mt-1 text-neutral text-neural-focus rounded-lg z-50 w-[20rem]"
+                class="dropdown-content menu p-4 mt-1 text-neutral text-neural-focus rounded-lg z-50 w-[20rem] list-disc"
                 [ngClass]="{
                   'bg-primary':
                     (calendarTableContent$ | async)[date][session].length === 1,
@@ -101,23 +101,14 @@
                 }"
               >
                 <li
-                  class="text-lg"
+                  class="text-md"
                   *ngFor="
                     let sessionContentDetail of (calendarTableContent$ | async)[
                       date
                     ][session]
                   "
-                  [ngClass]="{
-                    'text-base-100':
-                      (calendarTableContent$ | async)[date][session].length > 1
-                  }"
                 >
-                  {{
-                    (calendarTableContent$ | async)[date][session].length === 1
-                      ? ""
-                      : "-"
-                  }}
-                  Môn: {{ sessionContentDetail.defaultName }}
+                  {{ sessionContentDetail.defaultName }}
                 </li>
               </ul>
             </div>

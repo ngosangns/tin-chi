@@ -16,10 +16,10 @@
         <label
           for="my-modal-4"
           class="btn btn-sm btn-circle sticky top-2 left-full z-10"
-          >✕</label
         >
+          ✕
+        </label>
         <app-class-info
-          [selectedCalendar]="selectedCalendar"
           [data$]="data$"
           [calendarGroupByMajor]="calendarGroupByMajor"
           (resetClass)="resetClass()"
@@ -39,8 +39,12 @@
       [calendarTableContent$]="calendarTableContent$"
     ></app-calendar>
 
-    <label ref="modalBtn" for="my-modal" class="btn hidden">Open modal</label>
-    <input type="checkbox" id="my-modal" class="modal-toggle" />
+    <input
+      type="checkbox"
+      id="my-modal"
+      class="modal-toggle"
+      [(ngModel)]="isOpenModel"
+    />
     <div class="modal">
       <div class="modal-box">
         <h3 class="font-bold text-lg text-center">

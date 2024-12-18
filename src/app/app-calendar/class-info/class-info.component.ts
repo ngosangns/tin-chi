@@ -10,7 +10,6 @@ import { CalendarGroupByMajorDetail } from '../../utils/calendar';
   styleUrl: './class-info.component.scss',
 })
 export class ClassInfoComponent {
-  @Input('selectedCalendar') selectedCalendar: any = {};
   @Input('data$') data$: BehaviorSubject<any>;
   @Input('calendarGroupByMajor') calendarGroupByMajor: [
     string,
