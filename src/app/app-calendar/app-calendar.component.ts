@@ -1,16 +1,17 @@
-import { Component, ViewChild } from '@angular/core';
-import { BehaviorSubject, map, Observable, Subscription } from 'rxjs';
-import { HeaderComponent } from '../header/header.component';
-import { FooterComponent } from '../footer/footer.component';
 import { AsyncPipe, CommonModule } from '@angular/common';
+import { ChangeDetectorRef, Component } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { BehaviorSubject, map, Subscription } from 'rxjs';
+import { FooterComponent } from '../footer/footer.component';
+import { HeaderComponent } from '../header/header.component';
 import {
   CalendarData,
   CalendarGroupByMajorDetail,
   CalendarGroupBySession,
+  CalendarTableContent,
   processCalendar,
   RawCalendar,
 } from '../utils/calendar';
-import { FormsModule } from '@angular/forms';
 import { CalendarComponent } from './calendar/calendar.component';
 import { ClassInfoComponent } from './class-info/class-info.component';
 
@@ -39,17 +40,17 @@ type SelectedCalendar = {
   styleUrl: './app-calendar.component.scss',
 })
 export class AppCalendarComponent {
-  readonly sessions = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
-  readonly defaultClassLabel = 'Chọn lớp';
-  readonly jsonPath = `/tinchi.json?timestamp=${new Date().getTime()}`;
-  readonly excelPath = `/tinchi.xlsx?timestamp=${new Date().getTime()}`;
+  readonly SESSIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
+  readonly DEFAULT_CLASS_LABEL = 'Chọn lớp';
+  readonly JSON_PATH = `/tinchi.json?timestamp=${new Date().getTime()}`;
+  readonly EXCEL_PATH = `/tinchi.xlsx?timestamp=${new Date().getTime()}`;
 
   readonly loading$: BehaviorSubject<boolean>;
   readonly data$: BehaviorSubject<any>;
   readonly calendar$: BehaviorSubject<CalendarData | undefined>;
   readonly selectedCalendar$: BehaviorSubject<SelectedCalendar> =
     new BehaviorSubject({});
-  readonly calendarTableContent$: BehaviorSubject<any>;
+  readonly calendarTableContent$: BehaviorSubject<CalendarTableContent>;
   isOpenModel = false;
   readonly modalMessage$ = new BehaviorSubject<string>('');
 
@@ -68,7 +69,7 @@ export class AppCalendarComponent {
   calendarGroupByMajor: [string, CalendarGroupByMajorDetail][] = [];
   calendarGroupByMajorSub: Subscription;
 
-  constructor() {
+  constructor(private cdr: ChangeDetectorRef) {
     this.data$ = new BehaviorSubject<any>({});
     this.loading$ = new BehaviorSubject<boolean>(true);
     this.calendar$ = new BehaviorSubject<CalendarData | undefined>(undefined);
@@ -87,7 +88,7 @@ export class AppCalendarComponent {
 
   async fetchData(): Promise<void> {
     try {
-      const response: any = await fetch(this.jsonPath);
+      const response: any = await fetch(this.JSON_PATH);
       const data = await response.json();
       this.data$.next(data);
       const calendar = processCalendar(
@@ -95,13 +96,11 @@ export class AppCalendarComponent {
       );
       this.calendar$.next(calendar);
 
-      const result: any = {};
+      // init calendarTableContent
+      const result: CalendarTableContent = {};
       for (const date of calendar.dateList) {
         result[date] = {};
-        const resultDate = result[date];
-        for (const session of this.sessions) {
-          resultDate[session] = [];
-        }
+        for (const session of this.SESSIONS) result[date][session] = [];
       }
       this.calendarTableContent$.next(result);
     } catch (e: any) {
@@ -135,16 +134,17 @@ export class AppCalendarComponent {
     const _subjectName = majorName + '---' + subjectName;
     const classCode = '' + selectClassEvent?.value;
     const selectedCalendar = this.selectedCalendar$.value;
+
     // check subject
-    if (!selectedCalendar[_subjectName]) {
+    if (!selectedCalendar[_subjectName])
       selectedCalendar[_subjectName] = { isChecked: false, class: null };
-    }
+
     if (!selectClassEvent) {
       selectedCalendar[_subjectName].isChecked =
         !selectedCalendar[_subjectName].isChecked;
     } else {
       // check class
-      if (classCode == this.defaultClassLabel) {
+      if (classCode == this.DEFAULT_CLASS_LABEL) {
         selectedCalendar[_subjectName].class = null;
         if (!selectedCalendar[_subjectName].isChecked) {
           delete selectedCalendar[_subjectName];
@@ -179,7 +179,7 @@ export class AppCalendarComponent {
           data: {
             calendarTableContent: this.calendarTableContent$.value,
             dateList: this.calendar$.value!.dateList,
-            sessions: this.sessions,
+            sessions: this.SESSIONS,
             selectedCalendar: this.selectedCalendar$.value,
           },
         });
@@ -205,5 +205,6 @@ export class AppCalendarComponent {
   resetClass(): void {
     this.selectedCalendar$.next({});
     this.calculateCalendarTableContent();
+    this.cdr.detectChanges();
   }
 }

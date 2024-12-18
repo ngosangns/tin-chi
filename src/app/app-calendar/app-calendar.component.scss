@@ -15,19 +15,6 @@ main {
   box-sizing: border-box;
 }
 
-#calendar-table-container::-webkit-scrollbar {
-  width: 0.75rem;
-}
-
-#calendar-table-container::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-#calendar-table-container::-webkit-scrollbar-thumb {
-  background: #d3d3d3;
-  border-radius: 1rem;
-}
-
 #my-modal-4-content .modal-box::-webkit-scrollbar {
   width: 0.75rem;
 }

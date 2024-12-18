@@ -1,3 +1,9 @@
+export type CalendarTableContent = {
+  [date: string]: {
+    [session: number]: { defaultName: string }[];
+  };
+};
+
 export type SelectedCalendar = {
   [subjectName: string]: {
     isChecked: boolean;
@@ -7,7 +13,9 @@ export type SelectedCalendar = {
     } | null;
   };
 };
+
 export type RawCalendar = [string, number, string, string, string];
+
 export type CalendarData = {
   calendar: Calendar[];
   calendarGroupBySubjectName: CalendarGroupBySubjectName;
@@ -16,6 +24,7 @@ export type CalendarData = {
   maxTime: number;
   dateList: number[];
 };
+
 export type Calendar = {
   defaultName: string;
   majors: string[];
@@ -27,9 +36,11 @@ export type Calendar = {
   startSession: number;
   endSession: number;
 };
+
 export type CalendarGroupByMajor = {
   [major: string]: CalendarGroupByMajorDetail;
 };
+
 export type CalendarGroupByMajorDetail = {
   subjects: CalendarGroupBySubjectName;
 };
@@ -59,6 +70,33 @@ export type CalendarGroupBySessionDetail = {
   endSession: number;
 };
 
+/**
+ * Xử lý dữ liệu lịch học thô thành dữ liệu có cấu trúc
+ *
+ * @param rawData - Mảng dữ liệu lịch học thô từ nguồn
+ *
+ * @returns Đối tượng CalendarData chứa:
+ * - calendar: Mảng các đối tượng Calendar đã được xử lý
+ * - calendarGroupByMajor: Lịch được nhóm theo ngành học
+ * - calendarGroupBySubjectName: Lịch được nhóm theo tên môn học
+ * - minTime: Thời gian bắt đầu sớm nhất (timestamp)
+ * - maxTime: Thời gian kết thúc muộn nhất (timestamp)
+ * - dateList: Danh sách các ngày trong khoảng thời gian từ minTime đến maxTime
+ *
+ * @throws {Error} Khi:
+ * - Tên môn học rỗng
+ * - Định dạng tên môn học không hợp lệ
+ * - Không có dữ liệu thời gian bắt đầu/kết thúc
+ *
+ * @remarks
+ * Hàm thực hiện các bước xử lý:
+ * 1. Nhóm các môn học theo mã môn
+ * 2. Kết hợp lớp thực hành với lớp lý thuyết tương ứng
+ * 3. Loại bỏ các lớp lý thuyết đã được kết hợp
+ * 4. Xử lý và chuẩn hóa thông tin ngành học
+ * 5. Tính toán thời gian bắt đầu/kết thúc của toàn bộ lịch
+ * 6. Nhóm lịch theo tên môn học và theo ngành
+ */
 export function processCalendar(rawData: Array<RawCalendar>): CalendarData {
   // group subject code
   {
@@ -129,41 +167,41 @@ export function processCalendar(rawData: Array<RawCalendar>): CalendarData {
     let majors: string[] | null = null;
     let _majors: string = codeOnly.split('.')[0];
 
-    //standardlization before process
+    // standardlization before process
     _majors = _majors.replace('T', '');
 
-    //majors classification
+    // majors classification
     if (
       _majors.match(
         /^(A(\d{1,2})|AT(\d{1,2}))(C(\d{1,2})|CT(\d{1,2}))(D(\d{1,2})|DT(\d{1,2}))S*/g
       )
     ) {
-      //all majors
+      // all majors
       majors = _majors.match(/^(A(\d{1,2})|AT(\d{1,2}))S*/g);
     } else if (
       _majors.match(/^(A(\d{1,2})|AT(\d{1,2}))(C(\d{1,2})|CT(\d{1,2}))S*/g)
     ) {
-      //AT & CT
+      // AT & CT
       majors = _majors.match(/^(A(\d{1,2})|AT(\d{1,2}))S*/g);
     } else if (
       _majors.match(/^(C(\d{1,2})|CT(\d{1,2}))(D(\d{1,2})|DT(\d{1,2}))S*/g)
     ) {
-      //CT & DT
+      // CT & DT
       majors = _majors.match(
         /^(C(\d{1,2})|CT(\d{1,2}))(D(\d{1,2})|DT(\d{1,2}))S*/g
       );
     } else if (_majors.match(/^(A(\d{1,2})|AT(\d{1,2}))S*/g)) {
-      //AT only
+      // AT only
       majors = _majors.match(/^(A(\d{1,2})|AT(\d{1,2}))S*/g);
     } else if (_majors.match(/^(C(\d{1,2})|CT(\d{1,2}))S*/g)) {
-      //CT only
+      // CT only
       majors = _majors.match(/^(C(\d{1,2})|CT(\d{1,2}))S*/g);
     } else if (_majors.match(/^(D(\d{1,2})|DT(\d{1,2}))S*/g)) {
-      //DT only
+      // DT only
       majors = _majors.match(/^(D(\d{1,2})|DT(\d{1,2}))S*/g);
     }
 
-    //standardization for easy reading
+    // standardization for easy reading
     if (majors) {
       majors[0] = majors[0].replace(/(\D*)(0+)([1-9]{1,2})D*/g, '$1$3');
       majors[0] = majors[0].replace('A', 'AT');
@@ -172,12 +210,10 @@ export function processCalendar(rawData: Array<RawCalendar>): CalendarData {
     }
 
     // check invalid data
-    if (defaultName == '') {
+    if (defaultName == '')
       throw new Error('invalid subject name: data has empty subject name');
-    }
-    if ([defaultName, codeOnly, nameOnly].includes('')) {
+    if ([defaultName, codeOnly, nameOnly].includes(''))
       throw new Error(`invalid subject name: ${defaultName}`);
-    }
 
     // set min/max time
     minTime = minTime ? (minTime > startDate ? startDate : minTime) : startDate;
@@ -268,17 +304,15 @@ function processGroupByMajorCalendar(
     const subject = data[subjectName];
     if (!subject.majors || subject.majors.length == 0)
       subject.majors = ['Chưa phân loại'];
-    for (const major of subject.majors) {
-      if (!(major in result)) {
+
+    for (const major of subject.majors)
+      if (!(major in result))
         result[major] = <CalendarGroupByMajorDetail>{
           subjects: <CalendarGroupBySubjectName>{
             [subjectName]: subject,
           },
         };
-      } else {
-        result[major].subjects[subjectName] = subject;
-      }
-    }
+      else result[major].subjects[subjectName] = subject;
   }
   return result;
 }
