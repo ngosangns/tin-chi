@@ -1,12 +1,6 @@
 <div
   id="calendar-table-container"
-  class="rounded-lg"
-  style="
-    overflow: scroll;
-    overflow-x: hidden;
-    overflow-y: overlay;
-    max-height: calc(100vh - 18rem);
-  "
+  class="rounded-box overflow-scroll overflow-x-hidden overflow-y-overlay max-h-[calc(100vh-18rem)] print:!max-h-auto print:!overflow-visible"
 >
   <div
     id="calendar-table"
@@ -46,9 +40,13 @@
           {{ i + 1 }}
         </div>
       </ng-template>
+
       <!-- Hiển thị ngày -->
       <div
         class="text-xs text-center px-1 py-3 flex flex-col items-center justify-center border-b border-gray-300"
+        [ngClass]="{
+          'bg-base-200': [6, 0].includes(getDayFromDate(date)),
+        }"
         style="grid-column: 1 / 3"
       >
         <span class="font-bold text-lg">
@@ -56,9 +54,13 @@
         </span>
         {{ dateNumberToDate(date).toLocaleDateString("vi") }}
       </div>
+
       <!-- Chi tiết ngày học -->
       <div
-        class="border-b border-gray-300"
+        class="border-b border-gray-300 py-2 gap-2 items-center"
+        [ngClass]="{
+          'bg-base-200': [6, 0].includes(getDayFromDate(date)),
+        }"
         style="
           grid-column: 3 / 19;
           display: grid;
@@ -71,15 +73,14 @@
         >
           <div
             *ngFor="let subject of row"
-            class="bg-transparent px-1 py-3"
             [ngStyle]="{
               'grid-column': subject.start + ' / ' + (subject.end + 1),
             }"
           >
             <div
-              class="bg-green-400 rounded-md p-2 text-gray-800 text-sm"
+              class="bg-primary rounded-box py-2 px-3 text-gray-800 text-xs"
               [ngClass]="{
-                '!bg-red-400': rowIndex > 0
+                '!bg-error text-neutral-content': rowIndex > 0
               }"
             >
               {{ subject.defaultName }}

@@ -14,16 +14,3 @@ main {
   margin: 0 auto;
   box-sizing: border-box;
 }
-
-#my-modal-4-content .modal-box::-webkit-scrollbar {
-  width: 0.75rem;
-}
-
-#my-modal-4-content .modal-box::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-#my-modal-4-content .modal-box::-webkit-scrollbar-thumb {
-  background: #d3d3d3;
-  border-radius: 2rem;
-}

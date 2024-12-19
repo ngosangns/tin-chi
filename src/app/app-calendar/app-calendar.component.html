@@ -5,56 +5,107 @@
     <span class="loading loading-dots loading-lg"></span>
   </div>
   <div *ngIf="!(loading$ | async)">
-    <label class="btn mb-2" for="my-modal-4">Chọn lớp</label>
-    <input type="checkbox" id="my-modal-4" class="modal-toggle" />
-    <label
-      id="my-modal-4-content"
-      for="my-modal-4"
-      class="modal cursor-pointer"
-    >
-      <label class="modal-box w-9/12 max-w-3xl relative rounded-lg" for="">
-        <label
-          for="my-modal-4"
-          class="btn btn-sm btn-circle sticky top-2 left-full z-10"
-        >
-          ✕
-        </label>
-        <app-class-info
-          [data$]="data$"
-          [calendarGroupByMajor]="calendarGroupByMajor"
-          (resetClass)="resetClass()"
-          (onChangeSelectSubjectClass)="
-            onChangeSelectSubjectClass(
-              $event.majorName,
-              $event.subjectName,
-              $event.selectClassEvent
-            )
-          "
-        ></app-class-info>
+    <div class="flex gap-3 print:hidden">
+      <label
+        class="btn mb-2 btn-outline btn-active cursor-default rounded-box border-none hover:bg-neural"
+      >
+        {{ (data$ | async)?.title }}
       </label>
-    </label>
+
+      <label
+        class="btn mb-2 rounded-box border-none hover:bg-base-200"
+        (click)="switchTab('class-info')"
+        [ngClass]="{ 'btn-primary hover:bg-primary': showTab === 'class-info' }"
+      >
+        Thông tin lớp
+      </label>
+
+      <div
+        [ngClass]="{
+        'tooltip tooltip-open tooltip-error before:text-neutral-content before:rounded-box': isConflict,
+      }"
+        data-tip="Trùng lịch"
+      >
+        <label
+          class="btn mb-2 rounded-box border-none hover:bg-base-200"
+          (click)="switchTab('calendar')"
+          [ngClass]="{ 'btn-primary hover:bg-primary': showTab === 'calendar' }"
+        >
+          Lịch học
+        </label>
+      </div>
+
+      <label
+        class="btn mb-2 rounded-box border-none hover:bg-base-200"
+        (click)="switchTab('more-info')"
+        [ngClass]="{ 'btn-primary hover:bg-primary': showTab === 'more-info' }"
+      >
+        Thông tin thêm
+      </label>
+
+      <div class="flex-grow"></div>
+
+      <label class="btn mb-2 rounded-box border-none" (click)="print()">
+        Xuất
+      </label>
+    </div>
+
+    <ul class="hidden print:block">
+      <ng-template
+        *ngFor="let subject of selectedCalendar$ | async | keyvalue"
+        [ngIf]="true"
+      >
+        <li
+          *ngIf="subject.value.class?.code && subject.value.isChecked"
+          class="mb-3"
+        >
+          <p class="flex gap-3">
+            <span class="border rounded-box px-3 py-1">{{ subject.key }}</span>
+            <span class="border rounded-box px-3 py-1">
+              {{ subject.value.class!.code }}
+            </span>
+          </p>
+        </li>
+      </ng-template>
+    </ul>
+
+    <app-class-info
+      class="print:!hidden"
+      [ngClass]="{
+        'hidden': showTab !== 'class-info',
+      }"
+      [data$]="data$"
+      [calendarGroupByMajor]="calendarGroupByMajor"
+      (resetClass)="resetClass()"
+      (onChangeSelectSubjectClass)="
+        onChangeSelectSubjectClass(
+          $event.majorName,
+          $event.subjectName,
+          $event.selectClassEvent
+        )
+      "
+    >
+    </app-class-info>
 
     <app-calendar
+      class="print:!block"
+      [ngClass]="{
+        'hidden': showTab !== 'calendar',
+      }"
       [calendar$]="calendar$"
       [calendarTableContent$]="calendarTableContent$"
-    ></app-calendar>
+    >
+    </app-calendar>
 
-    <input
-      type="checkbox"
-      id="my-modal"
-      class="modal-toggle"
-      [(ngModel)]="isOpenModel"
-    />
-    <div class="modal">
-      <div class="modal-box">
-        <h3 class="font-bold text-lg text-center">
-          {{ modalMessage$ | async }}
-        </h3>
-        <div class="modal-action justify-center">
-          <label for="my-modal" class="btn" (click)="closeModel()">OK</label>
-        </div>
-      </div>
-    </div>
+    <app-more-info
+      class="print:!hidden"
+      [ngClass]="{
+        'hidden': showTab !== 'more-info',
+      }"
+      [data$]="data$"
+      [EXCEL_PATH]="EXCEL_PATH"
+    >
+    </app-more-info>
   </div>
 </main>
 

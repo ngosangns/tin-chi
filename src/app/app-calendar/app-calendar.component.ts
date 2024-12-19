@@ -14,6 +14,7 @@ import {
 } from '../utils/calendar';
 import { CalendarComponent } from './calendar/calendar.component';
 import { ClassInfoComponent } from './class-info/class-info.component';
+import { MoreInfoComponent } from './more-info/more-info.component';
 
 type SelectedCalendar = {
   [subjectName: string]: {
@@ -35,6 +36,7 @@ type SelectedCalendar = {
     FooterComponent,
     CalendarComponent,
     ClassInfoComponent,
+    MoreInfoComponent,
   ],
   templateUrl: './app-calendar.component.html',
   styleUrl: './app-calendar.component.scss',
@@ -51,8 +53,9 @@ export class AppCalendarComponent {
   readonly selectedCalendar$: BehaviorSubject<SelectedCalendar> =
     new BehaviorSubject({});
   readonly calendarTableContent$: BehaviorSubject<CalendarTableContent>;
-  isOpenModel = false;
-  readonly modalMessage$ = new BehaviorSubject<string>('');
+  showTab: 'class-info' | 'calendar' | 'more-info' = 'class-info';
+  isConflict: boolean = false;
+  errorMessage: string = '';
 
   get calendarGroupByMajor$() {
     return this.calendar$.pipe(
@@ -103,21 +106,13 @@ export class AppCalendarComponent {
         for (const session of this.SESSIONS) result[date][session] = [];
       }
       this.calendarTableContent$.next(result);
+      this.errorMessage = '';
     } catch (e: any) {
       console.error(e);
-      this.modalMessage$.next(e.message);
+      this.errorMessage = e.message;
     } finally {
       this.loading$.next(false);
     }
-  }
-
-  openModel(message: string): void {
-    this.isOpenModel = true;
-    this.modalMessage$.next(message);
-  }
-
-  closeModel(): void {
-    this.isOpenModel = false;
   }
 
   checkSession(shift: number): 'morning' | 'afternoon' | 'evening' {
@@ -131,26 +126,25 @@ export class AppCalendarComponent {
     subjectName: string,
     selectClassEvent: EventTarget | any = null
   ): Promise<void> {
-    const _subjectName = majorName + '---' + subjectName;
+    const marjorSubject = majorName + '---' + subjectName;
     const classCode = '' + selectClassEvent?.value;
     const selectedCalendar = this.selectedCalendar$.value;
 
     // check subject
-    if (!selectedCalendar[_subjectName])
-      selectedCalendar[_subjectName] = { isChecked: false, class: null };
+    if (!selectedCalendar[marjorSubject])
+      selectedCalendar[marjorSubject] = { isChecked: false, class: null };
 
-    if (!selectClassEvent) {
-      selectedCalendar[_subjectName].isChecked =
-        !selectedCalendar[_subjectName].isChecked;
-    } else {
+    if (!selectClassEvent)
+      selectedCalendar[marjorSubject].isChecked =
+        !selectedCalendar[marjorSubject].isChecked;
+    else {
       // check class
       if (classCode == this.DEFAULT_CLASS_LABEL) {
-        selectedCalendar[_subjectName].class = null;
-        if (!selectedCalendar[_subjectName].isChecked) {
-          delete selectedCalendar[_subjectName];
-        }
+        selectedCalendar[marjorSubject].class = null;
+        if (!selectedCalendar[marjorSubject].isChecked)
+          delete selectedCalendar[marjorSubject];
       }
-      selectedCalendar[_subjectName].class = {
+      selectedCalendar[marjorSubject].class = {
         code: classCode,
         details:
           this.calendar$.value!.calendarGroupBySubjectName[subjectName].classes[
@@ -162,8 +156,8 @@ export class AppCalendarComponent {
     this.selectedCalendar$.next(selectedCalendar);
 
     // skip recalculate
-    if (!selectClassEvent && !selectedCalendar[_subjectName].class) return;
-    if (selectClassEvent && !selectedCalendar[_subjectName].isChecked) return;
+    if (!selectClassEvent && !selectedCalendar[marjorSubject].class) return;
+    if (selectClassEvent && !selectedCalendar[marjorSubject].isChecked) return;
 
     await this.calculateCalendarTableContent();
   }
@@ -193,12 +187,12 @@ export class AppCalendarComponent {
           this.calendarTableContent$.value,
           result.calendarTableContent
         );
-        if (result.isConflict && !this.isOpenModel) {
-          this.openModel('Cảnh báo trùng lịch!');
-        }
+
+        this.isConflict = result.isConflict;
       }
+      this.errorMessage = '';
     } catch (e) {
-      this.openModel('Có lỗi xảy ra, không thể cập nhật dữ liệu!');
+      this.errorMessage = 'Có lỗi xảy ra, không thể cập nhật dữ liệu!';
     }
   }
 
@@ -206,5 +200,13 @@ export class AppCalendarComponent {
     this.selectedCalendar$.next({});
     this.calculateCalendarTableContent();
     this.cdr.detectChanges();
+  }
+
+  switchTab(tab: 'class-info' | 'calendar' | 'more-info'): void {
+    this.showTab = tab;
+  }
+
+  print() {
+    window.print();
   }
 }

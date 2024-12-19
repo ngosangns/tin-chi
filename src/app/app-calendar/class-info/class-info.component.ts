@@ -5,7 +5,7 @@ import { CalendarGroupByMajorDetail } from '../../utils/calendar';
 
 @Component({
   selector: 'app-class-info',
-  imports: [CommonModule, AsyncPipe],
+  imports: [CommonModule],
   templateUrl: './class-info.component.html',
   styleUrl: './class-info.component.scss',
 })
@@ -21,7 +21,6 @@ export class ClassInfoComponent {
     new EventEmitter();
 
   readonly defaultClassLabel = 'Chọn lớp';
-  readonly excelPath = `/tinchi.xlsx?timestamp=${new Date().getTime()}`;
 
   constructor() {
     this.data$ = new BehaviorSubject<any>({});
