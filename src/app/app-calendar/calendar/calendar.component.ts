@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, Input } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
-import { CalendarData, CalendarTableContent } from '../../utils/calendar';
+import { CalendarData, CalendarTableContent } from '../../types/calendar';
 
 @Component({
   selector: 'app-calendar',
@@ -13,8 +13,8 @@ export class CalendarComponent {
   @Input('calendar$') calendar$: BehaviorSubject<CalendarData | undefined>;
   @Input('calendarTableContent$')
   calendarTableContent$: BehaviorSubject<CalendarTableContent>;
+  @Input('SESSIONS') SESSIONS: number[] = [];
 
-  readonly SESSIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
   readonly DAY_OF_WEEK_MAP = [
     'Chủ Nhật',
     'Thứ Hai',

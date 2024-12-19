@@ -54,24 +54,39 @@
 
   <div class="relative">
     <!-- Hiển thị danh sách lịch đã chọn khi in -->
-    <!-- <ul class="hidden print:block">
+    <ul class="hidden print:block">
       <ng-template
-        *ngFor="let subject of selectedCalendar$ | async | keyvalue"
+        *ngFor="
+          let major of (calendar$ | async)?.calendarGroupByMajor ?? {}
+            | keyvalue
+        "
         [ngIf]="true"
       >
-        <li
-          *ngIf="subject.value.class?.code && subject.value.isChecked"
-          class="mb-3"
+        <ng-template
+          *ngFor="let subject of major.value.subjects ?? {} | keyvalue"
+          [ngIf]="true"
         >
-          <p class="flex gap-3">
-            <span class="border rounded-box px-3 py-1">{{ subject.key }}</span>
-            <span class="border rounded-box px-3 py-1">
-              {{ subject.value.class!.code }}
-            </span>
-          </p>
-        </li>
+          <li
+            *ngIf="
+              subject.value.selectedClass && subject.value.displayOnCalendar
+            "
+            class="mb-3"
+          >
+            <p class="flex gap-3">
+              <span class="border rounded-box px-3 py-1">{{
+                subject.key
+              }}</span>
+              <span class="border rounded-box px-3 py-1">
+                {{
+                  subject.value.classes[subject.value.selectedClass].details[0]
+                    .defaultName
+                }}
+              </span>
+            </p>
+          </li>
+        </ng-template>
       </ng-template>
-    </ul> -->
+    </ul>
 
     <!-- Bảng chọn lịch -->
     <app-class-info
@@ -91,6 +106,7 @@
       [ngClass]="{
         'hidden': showTab !== 'calendar',
       }"
+      [SESSIONS]="SESSIONS"
       [calendar$]="calendar$"
       [calendarTableContent$]="calendarTableContent$"
     >

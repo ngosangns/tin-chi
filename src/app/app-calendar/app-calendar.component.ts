@@ -1,34 +1,23 @@
 import { AsyncPipe, CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { BehaviorSubject, map, Subscription } from 'rxjs';
+import { BehaviorSubject, Subscription } from 'rxjs';
 import { FooterComponent } from '../footer/footer.component';
 import { HeaderComponent } from '../header/header.component';
 import {
   CalendarData,
   CalendarGroupByMajor,
   CalendarGroupByMajorDetail,
-  CalendarGroupBySession,
   CalendarGroupBySubjectName,
   CalendarTableContent,
   CalendarTableContentInDate,
   CalendarTableContentInSession,
-  processCalendar,
   RawCalendar,
-} from '../utils/calendar';
+} from '../types/calendar';
 import { CalendarComponent } from './calendar/calendar.component';
 import { ClassInfoComponent } from './class-info/class-info.component';
 import { MoreInfoComponent } from './more-info/more-info.component';
-
-type SelectedCalendar = {
-  [subjectName: string]: {
-    isChecked: boolean;
-    class: {
-      code: string;
-      details: CalendarGroupBySession;
-    } | null;
-  };
-};
+import { processCalendar } from '../utils/calendar';
 
 @Component({
   selector: 'app-app-calendar',
@@ -120,7 +109,6 @@ export class AppCalendarComponent {
 
   async calculateCalendarTableContent(): Promise<void> {
     try {
-      console.log(123);
       const result: any = await new Promise((resolve, reject) => {
         const worker = new Worker(
           new URL('./calendar.worker', import.meta.url)
@@ -143,7 +131,6 @@ export class AppCalendarComponent {
       });
 
       if (result) {
-        console.log(result);
         this.calendarTableContent$.next(result.calendarTableContent);
         this.isConflict = result.isConflict;
       }

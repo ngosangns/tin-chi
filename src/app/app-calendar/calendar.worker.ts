@@ -2,7 +2,7 @@ import {
   CalendarData,
   CalendarGroupBySessionDetail,
   CalendarTableContent,
-} from '../utils/calendar';
+} from '../types/calendar';
 
 function workerCalculateCalendarTableContent(
   calendarTableContent: CalendarTableContent,

@@ -1,85 +1,16 @@
-export type CalendarTableContent = {
-  [date: string]: CalendarTableContentInDate;
-};
-
-export type CalendarTableContentInDate = {
-  [session: number]: CalendarTableContentInSession;
-};
-
-export type CalendarTableContentInSession = { defaultName: string }[];
-
-export type SelectedCalendar = {
-  [subjectName: string]: {
-    isChecked: boolean;
-    class: {
-      code: string;
-      details: CalendarGroupBySession;
-    } | null;
-  };
-};
-
-export type RawCalendar = [string, number, string, string, string];
-
-export type CalendarData = {
-  calendar: Calendar[];
-  calendarGroupBySubjectName: CalendarGroupBySubjectName;
-  calendarGroupByMajor: CalendarGroupByMajor;
-  minTime: number;
-  maxTime: number;
-  dateList: number[];
-};
-
-export type Calendar = {
-  defaultName: string;
-  majors: string[];
-  nameOnly: string;
-  codeOnly: string;
-  dayOfWeek: number;
-  startDate: number;
-  endDate: number;
-  startSession: number;
-  endSession: number;
-};
-
-export type CalendarGroupByMajor = {
-  [major: string]: CalendarGroupByMajorDetail;
-};
-
-export type CalendarGroupByMajorDetail = {
-  subjects: CalendarGroupBySubjectName;
-
-  // additional properties for calendar page
-  expanded: boolean;
-};
-
-export type CalendarGroupBySubjectName = {
-  [subjectName: string]: CalendarGroupBySubjectNameDetail;
-};
-export type CalendarGroupBySubjectNameDetail = {
-  majors: string[];
-  classes: CalendarGroupByClass;
-
-  // additional properties for calendar page
-  selectedClass: string;
-  displayOnCalendar: boolean;
-};
-
-export type CalendarGroupByClass = {
-  [subjectClassCode: string]: CalendarGroupByClassDetail;
-};
-export type CalendarGroupByClassDetail = {
-  details: CalendarGroupBySession;
-};
-
-export type CalendarGroupBySession = [CalendarGroupBySessionDetail];
-export type CalendarGroupBySessionDetail = {
-  defaultName: string;
-  startDate: number;
-  endDate: number;
-  dayOfWeek: number;
-  startSession: number;
-  endSession: number;
-};
+import {
+  RawCalendar,
+  CalendarData,
+  Calendar,
+  CalendarGroupBySubjectName,
+  CalendarGroupBySubjectNameDetail,
+  CalendarGroupByClass,
+  CalendarGroupByClassDetail,
+  CalendarGroupBySession,
+  CalendarGroupBySessionDetail,
+  CalendarGroupByMajor,
+  CalendarGroupByMajorDetail,
+} from '../types/calendar';
 
 /**
  * Xử lý dữ liệu lịch học thô thành dữ liệu có cấu trúc
@@ -111,7 +42,6 @@ export type CalendarGroupBySessionDetail = {
 export function processCalendar(rawData: Array<RawCalendar>): CalendarData {
   // group subject code
   {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const subject_tree: any = {};
     for (let i = 0; i < rawData.length; i++) {
       if (!subject_tree[rawData[i][0]]) {
@@ -120,6 +50,7 @@ export function processCalendar(rawData: Array<RawCalendar>): CalendarData {
         subject_tree[rawData[i][0]].push(rawData[i]);
       }
     }
+
     // add theory class to practice class
     for (const key in subject_tree) {
       const name = key.replace(/\((.+?)\)$/i, '');
@@ -137,6 +68,7 @@ export function processCalendar(rawData: Array<RawCalendar>): CalendarData {
         }
       }
     }
+
     // remove theory class
     for (const key in subject_tree) {
       const name = key.replace(/\((.+?)\)$/i, '');
@@ -147,6 +79,7 @@ export function processCalendar(rawData: Array<RawCalendar>): CalendarData {
           delete subject_tree[name + `(${theory_code})`];
       }
     }
+
     rawData = [];
     for (const key in subject_tree) {
       rawData.push(...subject_tree[key]);
