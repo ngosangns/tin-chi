@@ -1,44 +1,52 @@
-import { AsyncPipe, CommonModule } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { BehaviorSubject } from 'rxjs';
 import { CalendarGroupByMajorDetail } from '../../utils/calendar';
+import { FormsModule } from '@angular/forms';
 
 @Component({
   selector: 'app-class-info',
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './class-info.component.html',
   styleUrl: './class-info.component.scss',
 })
 export class ClassInfoComponent {
-  @Input('data$') data$: BehaviorSubject<any>;
   @Input('calendarGroupByMajor') calendarGroupByMajor: [
-    string,
-    CalendarGroupByMajorDetail
+    string, // Tên khóa / ngành
+    CalendarGroupByMajorDetail // Chi tiết lịch học của khóa / ngành
   ][] = [];
 
-  @Output('resetClass') readonly resetClass$ = new EventEmitter();
-  @Output('onChangeSelectSubjectClass') readonly onChangeSelectSubjectClass$ =
-    new EventEmitter();
+  @Output('resetClass') readonly resetClass = new EventEmitter();
+  @Output('onChange') readonly onChange$ = new EventEmitter();
 
   readonly defaultClassLabel = 'Chọn lớp';
 
-  constructor() {
-    this.data$ = new BehaviorSubject<any>({});
+  constructor() {}
+
+  reset(major: string): void {
+    this.resetClass.emit(major);
+    this.onChange$.next({ major, subject: '', field: '' });
   }
 
-  resetClass(): void {
-    this.resetClass$.next(true);
-  }
+  onChange(
+    major: string,
+    subject: string,
+    field: 'selectedClass' | 'displayOnCalendar'
+  ): void {
+    const majorData = this.calendarGroupByMajor.find(([m]) => m === major)?.[1];
+    if (!majorData) return;
 
-  onChangeSelectSubjectClass(
-    majorName: string,
-    subjectName: string,
-    selectClassEvent: EventTarget | any = null
-  ) {
-    this.onChangeSelectSubjectClass$.next({
-      majorName,
-      subjectName,
-      selectClassEvent,
-    });
+    const subjectData = majorData.subjects[subject];
+    if (!subjectData) return;
+
+    switch (field) {
+      case 'selectedClass':
+        if (!subjectData.displayOnCalendar) return;
+        this.onChange$.next({ major, subject, field });
+        return;
+      case 'displayOnCalendar':
+        if (!subjectData.selectedClass.length) return;
+        this.onChange$.next({ major, subject, field });
+        return;
+    }
   }
 }

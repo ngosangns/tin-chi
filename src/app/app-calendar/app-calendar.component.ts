@@ -6,9 +6,13 @@ import { FooterComponent } from '../footer/footer.component';
 import { HeaderComponent } from '../header/header.component';
 import {
   CalendarData,
+  CalendarGroupByMajor,
   CalendarGroupByMajorDetail,
   CalendarGroupBySession,
+  CalendarGroupBySubjectName,
   CalendarTableContent,
+  CalendarTableContentInDate,
+  CalendarTableContentInSession,
   processCalendar,
   RawCalendar,
 } from '../utils/calendar';
@@ -48,32 +52,18 @@ export class AppCalendarComponent {
   readonly EXCEL_PATH = `/tinchi.xlsx?timestamp=${new Date().getTime()}`;
 
   readonly loading$: BehaviorSubject<boolean>;
-  readonly data$: BehaviorSubject<any>;
   readonly calendar$: BehaviorSubject<CalendarData | undefined>;
-  readonly selectedCalendar$: BehaviorSubject<SelectedCalendar> =
-    new BehaviorSubject({});
   readonly calendarTableContent$: BehaviorSubject<CalendarTableContent>;
+
+  title: string = '';
   showTab: 'class-info' | 'calendar' | 'more-info' = 'class-info';
   isConflict: boolean = false;
   errorMessage: string = '';
-
-  get calendarGroupByMajor$() {
-    return this.calendar$.pipe(
-      map((calendar) => {
-        const result = Object.entries(
-          calendar?.calendarGroupByMajor || []
-        ).sort((a, b) => a[0].localeCompare(b[0]));
-        this.calendarGroupByMajor = result;
-        return result;
-      })
-    );
-  }
 
   calendarGroupByMajor: [string, CalendarGroupByMajorDetail][] = [];
   calendarGroupByMajorSub: Subscription;
 
   constructor(private cdr: ChangeDetectorRef) {
-    this.data$ = new BehaviorSubject<any>({});
     this.loading$ = new BehaviorSubject<boolean>(true);
     this.calendar$ = new BehaviorSubject<CalendarData | undefined>(undefined);
     this.calendarTableContent$ = new BehaviorSubject<any>({});
@@ -93,19 +83,26 @@ export class AppCalendarComponent {
     try {
       const response: any = await fetch(this.JSON_PATH);
       const data = await response.json();
-      this.data$.next(data);
+
+      // Lấy tiêu đề
+      this.title = data?.title || '';
+
+      // Xử lý dữ liệu lịch học
       const calendar = processCalendar(
         (data?.data as Array<RawCalendar>) || []
       );
       this.calendar$.next(calendar);
 
-      // init calendarTableContent
-      const result: CalendarTableContent = {};
+      // Khởi tạo không gian cho bảng lịch dựa vào data lịch
+      const calendarTableContent: CalendarTableContent = {};
       for (const date of calendar.dateList) {
-        result[date] = {};
-        for (const session of this.SESSIONS) result[date][session] = [];
+        calendarTableContent[date] = <CalendarTableContentInDate>{};
+        for (const session of this.SESSIONS)
+          calendarTableContent[date][session] =
+            [] as CalendarTableContentInSession;
       }
-      this.calendarTableContent$.next(result);
+      this.calendarTableContent$.next(calendarTableContent);
+
       this.errorMessage = '';
     } catch (e: any) {
       console.error(e);
@@ -121,73 +118,33 @@ export class AppCalendarComponent {
     return 'evening';
   }
 
-  async onChangeSelectSubjectClass(
-    majorName: string,
-    subjectName: string,
-    selectClassEvent: EventTarget | any = null
-  ): Promise<void> {
-    const marjorSubject = majorName + '---' + subjectName;
-    const classCode = '' + selectClassEvent?.value;
-    const selectedCalendar = this.selectedCalendar$.value;
-
-    // check subject
-    if (!selectedCalendar[marjorSubject])
-      selectedCalendar[marjorSubject] = { isChecked: false, class: null };
-
-    if (!selectClassEvent)
-      selectedCalendar[marjorSubject].isChecked =
-        !selectedCalendar[marjorSubject].isChecked;
-    else {
-      // check class
-      if (classCode == this.DEFAULT_CLASS_LABEL) {
-        selectedCalendar[marjorSubject].class = null;
-        if (!selectedCalendar[marjorSubject].isChecked)
-          delete selectedCalendar[marjorSubject];
-      }
-      selectedCalendar[marjorSubject].class = {
-        code: classCode,
-        details:
-          this.calendar$.value!.calendarGroupBySubjectName[subjectName].classes[
-            classCode
-          ].details,
-      };
-    }
-
-    this.selectedCalendar$.next(selectedCalendar);
-
-    // skip recalculate
-    if (!selectClassEvent && !selectedCalendar[marjorSubject].class) return;
-    if (selectClassEvent && !selectedCalendar[marjorSubject].isChecked) return;
-
-    await this.calculateCalendarTableContent();
-  }
-
   async calculateCalendarTableContent(): Promise<void> {
     try {
+      console.log(123);
       const result: any = await new Promise((resolve, reject) => {
-        const worker = new Worker('/calendar.js');
-        worker.onmessage = (res: { data: any }) => resolve(res.data);
+        const worker = new Worker(
+          new URL('./calendar.worker', import.meta.url)
+        );
+        worker.onmessage = (res: {
+          data: {
+            calendarTableContent: CalendarTableContent;
+            isConflict: boolean;
+          };
+        }) => resolve(res.data);
         worker.onerror = (err: any) => reject(err);
         worker.postMessage({
           type: 'calculateCalendarTableContent',
           data: {
             calendarTableContent: this.calendarTableContent$.value,
-            dateList: this.calendar$.value!.dateList,
+            calendar: this.calendar$.value,
             sessions: this.SESSIONS,
-            selectedCalendar: this.selectedCalendar$.value,
           },
         });
       });
 
       if (result) {
-        Object.keys(this.calendarTableContent$.value).forEach(
-          (key) => delete this.calendarTableContent$.value[key]
-        );
-        Object.assign(
-          this.calendarTableContent$.value,
-          result.calendarTableContent
-        );
-
+        console.log(result);
+        this.calendarTableContent$.next(result.calendarTableContent);
         this.isConflict = result.isConflict;
       }
       this.errorMessage = '';
@@ -196,10 +153,31 @@ export class AppCalendarComponent {
     }
   }
 
-  resetClass(): void {
-    this.selectedCalendar$.next({});
+  triggerRecalculateTableContent(e: Event) {
+    const data = e as unknown as {
+      major: string;
+      subject: string;
+      field: 'selectedClass' | 'displayOnCalendar';
+    };
     this.calculateCalendarTableContent();
-    this.cdr.detectChanges();
+  }
+
+  resetClass(e: Event): void {
+    const major = e as unknown as string;
+
+    const calendar = this.calendar$.value;
+    const majorCalendar =
+      calendar?.calendarGroupByMajor?.[major] ?? <CalendarGroupByMajor>{};
+
+    const subjects = majorCalendar.subjects as CalendarGroupBySubjectName;
+    for (const subjectName in subjects) {
+      subjects[subjectName].displayOnCalendar = false;
+      subjects[subjectName].selectedClass = '';
+    }
+
+    // this.selectedCalendar$.next({});
+    // this.calculateCalendarTableContent();
+    // this.cdr.detectChanges();
   }
 
   switchTab(tab: 'class-info' | 'calendar' | 'more-info'): void {

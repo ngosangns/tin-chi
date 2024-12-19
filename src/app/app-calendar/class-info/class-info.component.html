@@ -6,13 +6,19 @@
     *ngFor="let item of calendarGroupByMajor"
     class="collapse collapse-plus border border-base-300 bg-base-100 rounded-box w-full mx-auto mb-4"
   >
-    <input type="checkbox" />
+    <input type="checkbox" [(ngModel)]="item[1].expanded" />
     <div class="collapse-title text-xl font-medium">
       <b>
         <span>{{ item[0] }}</span>
       </b>
     </div>
     <div class="collapse-content">
+      <button
+        class="btn btn-sm btn-outline text-sm ml-3 rounded-box"
+        (click)="reset(item[0])"
+      >
+        Reset
+      </button>
       <table class="table table-compact w-full">
         <thead>
           <tr>
@@ -31,16 +37,14 @@
             <td class="w-40">
               <select
                 class="select select-bordered select-sm w-full max-w-xs"
-                (change)="
-                  onChangeSelectSubjectClass(
-                    item[0],
-                    subject.key,
-                    $event.target
-                  )
-                "
+                [(ngModel)]="subject.value.selectedClass"
+                (change)="onChange(item[0], subject.key, 'selectedClass')"
               >
-                <option selected>{{ defaultClassLabel }}</option>
-                <option *ngFor="let code of subject.value.classes | keyvalue">
+                <option value="">{{ defaultClassLabel }}</option>
+                <option
+                  *ngFor="let code of subject.value.classes | keyvalue"
+                  [value]="code.key"
+                >
                   {{ code.key }}
                 </option>
               </select>
@@ -50,7 +54,8 @@
                 <input
                   type="checkbox"
                   class="checkbox"
-                  (change)="onChangeSelectSubjectClass(item[0], subject.key)"
+                  [(ngModel)]="subject.value.displayOnCalendar"
+                  (change)="onChange(item[0], subject.key, 'displayOnCalendar')"
                 />
               </label>
             </td>

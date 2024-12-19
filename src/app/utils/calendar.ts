@@ -1,8 +1,12 @@
 export type CalendarTableContent = {
-  [date: string]: {
-    [session: number]: { defaultName: string }[];
-  };
+  [date: string]: CalendarTableContentInDate;
 };
+
+export type CalendarTableContentInDate = {
+  [session: number]: CalendarTableContentInSession;
+};
+
+export type CalendarTableContentInSession = { defaultName: string }[];
 
 export type SelectedCalendar = {
   [subjectName: string]: {
@@ -43,6 +47,9 @@ export type CalendarGroupByMajor = {
 
 export type CalendarGroupByMajorDetail = {
   subjects: CalendarGroupBySubjectName;
+
+  // additional properties for calendar page
+  expanded: boolean;
 };
 
 export type CalendarGroupBySubjectName = {
@@ -51,6 +58,10 @@ export type CalendarGroupBySubjectName = {
 export type CalendarGroupBySubjectNameDetail = {
   majors: string[];
   classes: CalendarGroupByClass;
+
+  // additional properties for calendar page
+  selectedClass: string;
+  displayOnCalendar: boolean;
 };
 
 export type CalendarGroupByClass = {
@@ -264,6 +275,10 @@ function processGroupByNameCalendar(
       result[item.nameOnly] = <CalendarGroupBySubjectNameDetail>{
         majors: item.majors,
         classes: <CalendarGroupByClass>{},
+
+        // additional properties for calendar page
+        selectedClass: '',
+        displayOnCalendar: false,
       };
     }
     const subject = result[item.nameOnly];
@@ -311,6 +326,9 @@ function processGroupByMajorCalendar(
           subjects: <CalendarGroupBySubjectName>{
             [subjectName]: subject,
           },
+
+          // additional properties for calendar page
+          expanded: false,
         };
       else result[major].subjects[subjectName] = subject;
   }
