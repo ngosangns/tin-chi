@@ -71,9 +71,11 @@
     </div>
   </div>
 
-  <div class="sticky bottom-3 ml-3 z-10 flex gap-3 flex-wrap max-w-full">
+  <div
+    class="sticky bottom-3 p-3 z-10 flex gap-3 flex-wrap max-w-full bg-neutral-content"
+  >
     <button
-      class="btn btn-sm btn-outline text-sm mb-3 rounded-box bg-neutral-content"
+      class="btn btn-sm btn-outline text-sm rounded-box bg-neutral-content"
       (click)="auto('refer-non-overlap')"
     >
       Tự động xếp lịch
@@ -85,7 +87,7 @@
       </span>
     </button>
     <button
-      class="btn btn-sm btn-outline text-sm mb-3 rounded-box bg-neutral-content"
+      class="btn btn-sm btn-outline text-sm rounded-box bg-neutral-content"
       (click)="auto('refer-non-overlap-morning')"
     >
       Tự động xếp lịch (ưu tiên buổi sáng)
@@ -97,7 +99,7 @@
       </span>
     </button>
     <button
-      class="btn btn-sm btn-outline text-sm mb-3 rounded-box bg-neutral-content"
+      class="btn btn-sm btn-outline text-sm rounded-box bg-neutral-content"
       (click)="auto('refer-non-overlap-afternoon')"
     >
       Tự động xếp lịch (ưu tiên buổi chiều)
@@ -109,7 +111,7 @@
       </span>
     </button>
     <button
-      class="btn btn-sm btn-outline text-sm mb-3 rounded-box bg-neutral-content"
+      class="btn btn-sm btn-outline text-sm rounded-box bg-neutral-content"
       (click)="auto('refer-non-overlap-evening')"
     >
       Tự động xếp lịch (ưu tiên buổi tối)
