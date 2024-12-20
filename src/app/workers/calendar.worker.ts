@@ -1,11 +1,24 @@
 import {
+  END_AFTERNOON_SESSION,
+  END_EVENING_SESSION,
+  END_MORNING_SESSION,
+  START_AFTERNOON_SESSION,
+  START_EVENING_SESSION,
+  START_MORNING_SESSION,
+} from '../constants/calendar';
+import {
+  AutoMode,
   CalendarData,
-  CalendarGroupByClassDetail,
   CalendarGroupByMajor,
   CalendarGroupBySessionDetail,
   CalendarGroupBySubjectName,
   CalendarTableContent,
 } from '../types/calendar';
+import {
+  calculateOverlap,
+  calculateTotalSessionsInSessionRangeOfCombination,
+  generateCombinations,
+} from '../utils/calendar_overlap';
 
 function workerCalculateCalendarTableContent(
   calendarTableContent: CalendarTableContent,
@@ -104,7 +117,8 @@ export function workerAutoCalculateCalendarTableContent(
   calendarTableContent: CalendarTableContent,
   calendarGroupByMajor: CalendarGroupByMajor,
   dateList: number[], // Danh sách ngày của học kỳ
-  sessions: number[]
+  sessions: number[], // Danh sách tiết học (1 -> 16),
+  auto: AutoMode
 ): {
   updatedCalendarTableContent: CalendarTableContent;
   updatedCalendarGroupByMajor: CalendarGroupByMajor;
@@ -127,9 +141,37 @@ export function workerAutoCalculateCalendarTableContent(
   const combinationsOrderByOverlap = combinations
     .map((combination) => ({
       overlap: calculateOverlap(combination),
+      totalMorningSessions: calculateTotalSessionsInSessionRangeOfCombination(
+        combination,
+        START_MORNING_SESSION,
+        END_MORNING_SESSION
+      ),
+      totalAfternoonSessions: calculateTotalSessionsInSessionRangeOfCombination(
+        combination,
+        START_AFTERNOON_SESSION,
+        END_AFTERNOON_SESSION
+      ),
+      totalEveningSessions: calculateTotalSessionsInSessionRangeOfCombination(
+        combination,
+        START_EVENING_SESSION,
+        END_EVENING_SESSION
+      ),
       combination: combination,
     }))
-    .sort((a, b) => a.overlap - b.overlap);
+    .sort((a, b) => {
+      const diff = a.overlap - b.overlap;
+      if (diff === 0 && auto !== 'none' && auto !== 'refer-non-overlap') {
+        switch (auto) {
+          case 'refer-non-overlap-morning':
+            return -(a.totalMorningSessions - b.totalMorningSessions);
+          case 'refer-non-overlap-afternoon':
+            return -(a.totalAfternoonSessions - b.totalAfternoonSessions);
+          case 'refer-non-overlap-evening':
+            return -(a.totalEveningSessions - b.totalEveningSessions);
+        }
+      }
+      return diff;
+    });
 
   const bestCombination = combinationsOrderByOverlap.length
     ? combinationsOrderByOverlap[0]
@@ -164,104 +206,49 @@ export function workerAutoCalculateCalendarTableContent(
   };
 }
 
-function generateCombinations(
-  selectedSubjects: CalendarGroupBySubjectName
-): CalendarGroupByClassDetail[][] {
-  const subjectKeys = Object.keys(selectedSubjects);
-  const combinations: CalendarGroupByClassDetail[][] = [];
-
-  function backtrack(
-    index: number,
-    currentCombination: CalendarGroupByClassDetail[]
-  ) {
-    if (index === subjectKeys.length) {
-      // clone currentCombination completed result to avoid .pop()
-      combinations.push([...currentCombination]);
-      return;
-    }
-
-    const subjectKey = subjectKeys[index];
-    const subjectData = selectedSubjects[subjectKey];
-    const classKeys = Object.keys(subjectData.classes);
-
-    classKeys.forEach((classKey) => {
-      currentCombination.push(subjectData.classes[classKey]);
-      backtrack(index + 1, currentCombination);
-      currentCombination.pop();
-    });
-  }
-
-  backtrack(0, []);
-
-  return combinations;
-}
-
-function calculateOverlap(combination: CalendarGroupByClassDetail[]): number {
-  let overlap = 0;
-  const sessions: { [key: string]: boolean } = {};
-
-  for (let i = 0; i < combination.length; i++)
-    for (let j = i + 1; j < combination.length; j++) {
-      const classDetail1 = combination[i];
-      const classDetail2 = combination[j];
-      for (let session1 of classDetail1.details) {
-        for (let session2 of classDetail2.details) {
-          if (
-            session1.dayOfWeek === session2.dayOfWeek &&
-            session1.startDate <= session2.endDate &&
-            session1.endDate >= session2.startDate &&
-            session1.startSession <= session2.endSession &&
-            session1.endSession >= session2.startSession
-          ) {
-            overlap++;
-          }
-        }
-      }
-    }
-
-  return overlap;
-}
-
 self.onmessage = (message: {
   data: {
     type: string;
     data: any;
   };
 }) => {
-  switch (message.data.type) {
-    case 'calculateCalendarTableContent': {
-      const data = message.data.data as {
-        calendarTableContent: CalendarTableContent;
-        calendar: CalendarData;
-        sessions: number[];
-      };
-      self.postMessage(
-        workerCalculateCalendarTableContent(
-          data.calendarTableContent,
-          data.calendar.calendarGroupByMajor,
-          data.calendar.dateList,
-          data.sessions
-        )
-      );
-      break;
+  const data = message.data.data as {
+    calendarTableContent: CalendarTableContent;
+    calendar: CalendarData;
+    sessions: number[];
+    auto: AutoMode;
+  };
+
+  if (message.data.type === 'calculateCalendarTableContent') {
+    const data = message.data.data as {
+      calendarTableContent: CalendarTableContent;
+      calendar: CalendarData;
+      sessions: number[];
+      auto: AutoMode;
+    };
+
+    switch (data.auto) {
+      case 'none': {
+        self.postMessage(
+          workerCalculateCalendarTableContent(
+            data.calendarTableContent,
+            data.calendar.calendarGroupByMajor,
+            data.calendar.dateList,
+            data.sessions
+          )
+        );
+        break;
+      }
+      default:
+        self.postMessage(
+          workerAutoCalculateCalendarTableContent(
+            data.calendarTableContent,
+            data.calendar.calendarGroupByMajor,
+            data.calendar.dateList,
+            data.sessions,
+            data.auto
+          )
+        );
     }
-    case 'autoCalculateCalendarTableContent': {
-      const data = message.data.data as {
-        calendarTableContent: CalendarTableContent;
-        calendar: CalendarData;
-        sessions: number[];
-      };
-      self.postMessage(
-        workerAutoCalculateCalendarTableContent(
-          data.calendarTableContent,
-          data.calendar.calendarGroupByMajor,
-          data.calendar.dateList,
-          data.sessions
-        )
-      );
-      break;
-    }
-    default:
-      self.postMessage(null);
-  }
+  } else self.postMessage(null);
 };

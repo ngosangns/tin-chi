@@ -86,3 +86,10 @@ export type CalendarGroupBySessionDetail = {
   startSession: number;
   endSession: number;
 };
+
+export type AutoMode =
+  | 'none'
+  | 'refer-non-overlap'
+  | 'refer-non-overlap-morning'
+  | 'refer-non-overlap-afternoon'
+  | 'refer-non-overlap-evening';

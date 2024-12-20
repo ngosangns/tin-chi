@@ -2,13 +2,6 @@
   id="class-info"
   class="rounded-box overflow-scroll overflow-x-hidden overflow-y-overlay max-h-[calc(100vh-18rem)]"
 >
-  <button
-    class="btn btn-sm btn-outline text-sm mb-3 rounded-box sticky float-right top-0 z-10 bg-neutral-content"
-    (click)="auto()"
-  >
-    Tự động xếp lịch
-  </button>
-
   <div
     *ngFor="let item of calendarGroupByMajor"
     class="collapse collapse-plus border border-base-300 bg-base-100 rounded-box w-full mx-auto mb-4"
@@ -18,10 +11,16 @@
       <b>
         <span>{{ item[0] }}</span>
       </b>
+      <span
+        class="badge badge-neutral ml-3 !text-xs font-normal -mt-1 translate-y-[-0.2rem]"
+        *ngIf="isMajorSelecting(item[1])"
+      >
+        Đang chọn
+      </span>
     </div>
     <div class="collapse-content">
       <button
-        class="btn btn-sm btn-outline text-sm ml-3 rounded-box"
+        class="btn btn-sm btn-outline text-sm ml-3 rounded-box float-right mr-4"
         (click)="reset(item[0])"
       >
         Reset
@@ -70,5 +69,32 @@
         </tbody>
       </table>
     </div>
+  </div>
+
+  <div class="sticky bottom-3 ml-3 z-10 flex gap-3 flex-wrap max-w-full">
+    <button
+      class="btn btn-sm btn-outline text-sm mb-3 rounded-box bg-neutral-content"
+      (click)="auto('refer-non-overlap')"
+    >
+      Tự động xếp lịch
+    </button>
+    <button
+      class="btn btn-sm btn-outline text-sm mb-3 rounded-box bg-neutral-content"
+      (click)="auto('refer-non-overlap-morning')"
+    >
+      Tự động xếp lịch (ưu tiên buổi sáng)
+    </button>
+    <button
+      class="btn btn-sm btn-outline text-sm mb-3 rounded-box bg-neutral-content"
+      (click)="auto('refer-non-overlap-afternoon')"
+    >
+      Tự động xếp lịch (ưu tiên buổi chiều)
+    </button>
+    <button
+      class="btn btn-sm btn-outline text-sm mb-3 rounded-box bg-neutral-content"
+      (click)="auto('refer-non-overlap-evening')"
+    >
+      Tự động xếp lịch (ưu tiên buổi tối)
+    </button>
   </div>
 </div>

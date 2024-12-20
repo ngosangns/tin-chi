@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { CalendarGroupByMajorDetail } from '../../types/calendar';
+import { AutoMode, CalendarGroupByMajorDetail } from '../../types/calendar';
 import { FormsModule } from '@angular/forms';
 
 @Component({
@@ -24,11 +24,16 @@ export class ClassInfoComponent {
 
   reset(major: string): void {
     this.resetClass.emit(major);
-    this.onChange$.emit({ major, subject: '', field: '', auto: false });
+    this.onChange$.emit({ major, subject: '', field: '', auto: 'none' });
   }
 
-  auto() {
-    this.onChange$.emit({ major: '', subject: '', field: '', auto: true });
+  auto(auto: AutoMode): void {
+    this.onChange$.emit({
+      major: '',
+      subject: '',
+      field: '',
+      auto: auto,
+    });
   }
 
   onChange(
@@ -45,12 +50,21 @@ export class ClassInfoComponent {
     switch (field) {
       case 'selectedClass':
         if (!subjectData.displayOnCalendar) return;
-        this.onChange$.emit({ major, subject, field, auto: false });
+        this.onChange$.emit({ major, subject, field, auto: 'none' });
         return;
       case 'displayOnCalendar':
         if (!subjectData.selectedClass.length) return;
-        this.onChange$.emit({ major, subject, field, auto: false });
+        this.onChange$.emit({ major, subject, field, auto: 'none' });
         return;
     }
+  }
+
+  isMajorSelecting(
+    calendarGroupByMajorDetail: CalendarGroupByMajorDetail
+  ): boolean {
+    return Object.keys(calendarGroupByMajorDetail.subjects).some((subject) => {
+      const subjectData = calendarGroupByMajorDetail.subjects[subject];
+      return subjectData.displayOnCalendar;
+    });
   }
 }

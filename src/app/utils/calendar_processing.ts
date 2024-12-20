@@ -172,7 +172,7 @@ export function processCalendar(rawData: Array<RawCalendar>): CalendarData {
       majors,
       nameOnly,
       codeOnly,
-      dayOfWeek: v[1],
+      dayOfWeek: v[1] - 1 === 7 ? 0 : v[1] - 1, // Chuyển đổi từ thứ 2 -> chủ nhật sang 0 -> 6
       startDate,
       endDate,
       startSession,

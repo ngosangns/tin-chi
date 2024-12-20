@@ -5,6 +5,7 @@ import { BehaviorSubject, Subscription } from 'rxjs';
 import { FooterComponent } from '../footer/footer.component';
 import { HeaderComponent } from '../header/header.component';
 import {
+  AutoMode,
   CalendarData,
   CalendarGroupByMajor,
   CalendarGroupByMajorDetail,
@@ -17,7 +18,7 @@ import {
 import { CalendarComponent } from './calendar/calendar.component';
 import { ClassInfoComponent } from './class-info/class-info.component';
 import { MoreInfoComponent } from './more-info/more-info.component';
-import { processCalendar } from '../utils/calendar';
+import { processCalendar } from '../utils/calendar_processing';
 
 @Component({
   selector: 'app-app-calendar',
@@ -104,9 +105,9 @@ export class AppCalendarComponent {
     return 'evening';
   }
 
-  async calculateCalendarTableContent(auto = false): Promise<void> {
+  async calculateCalendarTableContent(auto: AutoMode = 'none'): Promise<void> {
     try {
-      if (auto) this.loading$.next(true);
+      if (auto != 'none') this.loading$.next(true);
       const result: {
         updatedCalendarTableContent: CalendarTableContent;
         updatedCalendarGroupByMajor: CalendarGroupByMajor;
@@ -124,13 +125,12 @@ export class AppCalendarComponent {
         }) => resolve(res.data);
         worker.onerror = (err: any) => reject(err);
         worker.postMessage({
-          type: auto
-            ? 'autoCalculateCalendarTableContent'
-            : 'calculateCalendarTableContent',
+          type: 'calculateCalendarTableContent',
           data: {
             calendarTableContent: this.calendarTableContent$.value,
             calendar: this.calendar$.value,
             sessions: this.SESSIONS,
+            auto,
           },
         });
       });
@@ -151,7 +151,7 @@ export class AppCalendarComponent {
     } catch (e) {
       alert('Có lỗi xảy ra, không thể cập nhật dữ liệu!');
     } finally {
-      this.loading$.next(false);
+      if (auto != 'none') this.loading$.next(false);
     }
   }
 
@@ -160,7 +160,7 @@ export class AppCalendarComponent {
       major: string;
       subject: string;
       field: 'selectedClass' | 'displayOnCalendar';
-      auto: boolean;
+      auto: AutoMode;
     };
     this.calculateCalendarTableContent(data.auto);
   }
