@@ -47,7 +47,6 @@ export class AppCalendarComponent {
   title: string = '';
   showTab: 'class-info' | 'calendar' | 'more-info' = 'class-info';
   isConflict: boolean = false;
-  errorMessage: string = '';
 
   calendarGroupByMajor: [string, CalendarGroupByMajorDetail][] = [];
   calendarGroupByMajorSub: Subscription;
@@ -91,11 +90,9 @@ export class AppCalendarComponent {
             [] as CalendarTableContentInSession;
       }
       this.calendarTableContent$.next(calendarTableContent);
-
-      this.errorMessage = '';
     } catch (e: any) {
       console.error(e);
-      this.errorMessage = e.message;
+      alert('Có lỗi xảy ra, không thể tải dữ liệu!');
     } finally {
       this.loading$.next(false);
     }
@@ -107,21 +104,29 @@ export class AppCalendarComponent {
     return 'evening';
   }
 
-  async calculateCalendarTableContent(): Promise<void> {
+  async calculateCalendarTableContent(auto = false): Promise<void> {
     try {
-      const result: any = await new Promise((resolve, reject) => {
+      if (auto) this.loading$.next(true);
+      const result: {
+        updatedCalendarTableContent: CalendarTableContent;
+        updatedCalendarGroupByMajor: CalendarGroupByMajor;
+        isConflict: boolean;
+      } = await new Promise((resolve, reject) => {
         const worker = new Worker(
-          new URL('./calendar.worker', import.meta.url)
+          new URL('../workers/calendar.worker', import.meta.url)
         );
         worker.onmessage = (res: {
           data: {
-            calendarTableContent: CalendarTableContent;
+            updatedCalendarTableContent: CalendarTableContent;
+            updatedCalendarGroupByMajor: CalendarGroupByMajor;
             isConflict: boolean;
           };
         }) => resolve(res.data);
         worker.onerror = (err: any) => reject(err);
         worker.postMessage({
-          type: 'calculateCalendarTableContent',
+          type: auto
+            ? 'autoCalculateCalendarTableContent'
+            : 'calculateCalendarTableContent',
           data: {
             calendarTableContent: this.calendarTableContent$.value,
             calendar: this.calendar$.value,
@@ -131,12 +136,22 @@ export class AppCalendarComponent {
       });
 
       if (result) {
-        this.calendarTableContent$.next(result.calendarTableContent);
+        // Cập nhật dữ liệu lịch học sau khi xử lý
+        this.calendarTableContent$.next(result.updatedCalendarTableContent);
+        const calendar = this.calendar$.value;
+        if (calendar) {
+          calendar.calendarGroupByMajor = result.updatedCalendarGroupByMajor;
+          this.calendar$.next(calendar);
+        }
         this.isConflict = result.isConflict;
+
+        // Cập nhật giao diện
+        this.cdr.detectChanges();
       }
-      this.errorMessage = '';
     } catch (e) {
-      this.errorMessage = 'Có lỗi xảy ra, không thể cập nhật dữ liệu!';
+      alert('Có lỗi xảy ra, không thể cập nhật dữ liệu!');
+    } finally {
+      this.loading$.next(false);
     }
   }
 
@@ -145,8 +160,9 @@ export class AppCalendarComponent {
       major: string;
       subject: string;
       field: 'selectedClass' | 'displayOnCalendar';
+      auto: boolean;
     };
-    this.calculateCalendarTableContent();
+    this.calculateCalendarTableContent(data.auto);
   }
 
   resetClass(e: Event): void {
@@ -161,10 +177,6 @@ export class AppCalendarComponent {
       subjects[subjectName].displayOnCalendar = false;
       subjects[subjectName].selectedClass = '';
     }
-
-    // this.selectedCalendar$.next({});
-    // this.calculateCalendarTableContent();
-    // this.cdr.detectChanges();
   }
 
   switchTab(tab: 'class-info' | 'calendar' | 'more-info'): void {

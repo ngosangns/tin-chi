@@ -40,50 +40,48 @@ import {
  * 6. Nhóm lịch theo tên môn học và theo ngành
  */
 export function processCalendar(rawData: Array<RawCalendar>): CalendarData {
-  // group subject code
+  // Nhóm mã môn học
   {
-    const subject_tree: any = {};
-    for (let i = 0; i < rawData.length; i++) {
-      if (!subject_tree[rawData[i][0]]) {
-        subject_tree[rawData[i][0]] = [rawData[i]];
-      } else {
-        subject_tree[rawData[i][0]].push(rawData[i]);
-      }
-    }
+    const subjectTree: Record<string, RawCalendar[]> = {};
 
-    // add theory class to practice class
-    for (const key in subject_tree) {
+    // Nhóm các môn học theo tên
+    rawData.forEach((item) => {
+      const subjectName = item[0];
+      if (!subjectTree[subjectName]) {
+        subjectTree[subjectName] = [item];
+      } else {
+        subjectTree[subjectName].push(item);
+      }
+    });
+
+    // Thêm lớp lý thuyết vào lớp thực hành
+    for (const key in subjectTree) {
       const name = key.replace(/\((.+?)\)$/i, '');
-      const is_practice_class = key.match(/\((.+?)\.\d{1,}\)$/i);
-      if (is_practice_class) {
-        const theory_code = is_practice_class[1];
-        const theory_class = subject_tree[name + `(${theory_code})`];
-        if (theory_class) {
-          subject_tree[key].unshift(
-            ...JSON.parse(JSON.stringify(theory_class))
-          );
-          for (let i = 0; i < subject_tree[key].length; i++) {
-            subject_tree[key][i][0] = key; // update subject name
-          }
+      const isPracticeClass = key.match(/\((.+?)\.\d{1,}\)$/i);
+      if (isPracticeClass) {
+        const theoryCode = isPracticeClass[1];
+        const theoryClass = subjectTree[name + `(${theoryCode})`];
+        if (theoryClass) {
+          subjectTree[key].unshift(...JSON.parse(JSON.stringify(theoryClass)));
+          subjectTree[key].forEach((item) => {
+            item[0] = key; // Cập nhật tên môn học
+          });
         }
       }
     }
 
-    // remove theory class
-    for (const key in subject_tree) {
+    // Loại bỏ các lớp lý thuyết
+    for (const key in subjectTree) {
       const name = key.replace(/\((.+?)\)$/i, '');
-      const is_practice_class = key.match(/\((.+?)\.\d{1,}\)$/i);
-      if (is_practice_class) {
-        const theory_code = is_practice_class[1];
-        if (subject_tree[name + `(${theory_code})`])
-          delete subject_tree[name + `(${theory_code})`];
+      const isPracticeClass = key.match(/\((.+?)\.\d{1,}\)$/i);
+      if (isPracticeClass) {
+        const theoryCode = isPracticeClass[1];
+        delete subjectTree[name + `(${theoryCode})`];
       }
     }
 
-    rawData = [];
-    for (const key in subject_tree) {
-      rawData.push(...subject_tree[key]);
-    }
+    // Chuyển đổi cây môn học trở lại thành rawData
+    rawData = Object.values(subjectTree).flat();
   }
 
   let minTime = 0,
@@ -91,36 +89,42 @@ export function processCalendar(rawData: Array<RawCalendar>): CalendarData {
   const dateList: number[] = [];
 
   const calendar = rawData.map((v) => {
-    const defaultName = v[0].trim().replace(/(\s+|\t+)/gm, ' '),
-      match = defaultName.match(/^(.+)(\(.+\))$/),
-      nameOnly = match && match.length == 3 ? match[1] : '',
-      codeOnly =
-        match && match.length == 3
-          ? match[2].replace('(', '').replace(')', '')
-          : '',
-      startDate = v[2]
-        ? Date.parse('20' + v[2].split('/').reverse().join('-'))
-        : 0,
-      endDate = v[3]
-        ? Date.parse('20' + v[3].split('/').reverse().join('-'))
-        : 0,
-      match2 = v[4].split('->'),
-      startSession = match2.length == 2 ? parseInt(match2[0]) : 0,
-      endSession = match2.length == 2 ? parseInt(match2[1]) : 0;
+    // Chuẩn hóa tên môn học và tách mã môn học
+    const defaultName = v[0].trim().replace(/(\s+|\t+)/gm, ' ');
+    const match = defaultName.match(/^(.+)(\(.+\))$/);
+    const nameOnly = match && match.length === 3 ? match[1] : '';
+    const codeOnly =
+      match && match.length === 3
+        ? match[2].replace('(', '').replace(')', '')
+        : '';
 
+    // Chuyển đổi ngày bắt đầu và kết thúc thành timestamp
+    const startDate = v[2]
+      ? Date.parse('20' + v[2].split('/').reverse().join('-'))
+      : 0;
+    const endDate = v[3]
+      ? Date.parse('20' + v[3].split('/').reverse().join('-'))
+      : 0;
+
+    // Tách buổi học bắt đầu và kết thúc
+    const match2 = v[4].split('->');
+    const startSession = match2.length === 2 ? parseInt(match2[0]) : 0;
+    const endSession = match2.length === 2 ? parseInt(match2[1]) : 0;
+
+    // Khởi tạo danh sách ngành học
     let majors: string[] | null = null;
     let _majors: string = codeOnly.split('.')[0];
 
-    // standardlization before process
+    // Chuẩn hóa mã ngành trước khi xử lý
     _majors = _majors.replace('T', '');
 
-    // majors classification
+    // Phân loại ngành học
     if (
       _majors.match(
         /^(A(\d{1,2})|AT(\d{1,2}))(C(\d{1,2})|CT(\d{1,2}))(D(\d{1,2})|DT(\d{1,2}))S*/g
       )
     ) {
-      // all majors
+      // Tất cả các ngành
       majors = _majors.match(/^(A(\d{1,2})|AT(\d{1,2}))S*/g);
     } else if (
       _majors.match(/^(A(\d{1,2})|AT(\d{1,2}))(C(\d{1,2})|CT(\d{1,2}))S*/g)
@@ -135,17 +139,17 @@ export function processCalendar(rawData: Array<RawCalendar>): CalendarData {
         /^(C(\d{1,2})|CT(\d{1,2}))(D(\d{1,2})|DT(\d{1,2}))S*/g
       );
     } else if (_majors.match(/^(A(\d{1,2})|AT(\d{1,2}))S*/g)) {
-      // AT only
+      // Chỉ AT
       majors = _majors.match(/^(A(\d{1,2})|AT(\d{1,2}))S*/g);
     } else if (_majors.match(/^(C(\d{1,2})|CT(\d{1,2}))S*/g)) {
-      // CT only
+      // Chỉ CT
       majors = _majors.match(/^(C(\d{1,2})|CT(\d{1,2}))S*/g);
     } else if (_majors.match(/^(D(\d{1,2})|DT(\d{1,2}))S*/g)) {
-      // DT only
+      // Chỉ DT
       majors = _majors.match(/^(D(\d{1,2})|DT(\d{1,2}))S*/g);
     }
 
-    // standardization for easy reading
+    // Chuẩn hóa mã ngành để dễ đọc
     if (majors) {
       majors[0] = majors[0].replace(/(\D*)(0+)([1-9]{1,2})D*/g, '$1$3');
       majors[0] = majors[0].replace('A', 'AT');
@@ -153,13 +157,13 @@ export function processCalendar(rawData: Array<RawCalendar>): CalendarData {
       majors[0] = majors[0].replace('D', 'DT');
     }
 
-    // check invalid data
-    if (defaultName == '')
+    // Kiểm tra dữ liệu không hợp lệ
+    if (defaultName === '')
       throw new Error('invalid subject name: data has empty subject name');
     if ([defaultName, codeOnly, nameOnly].includes(''))
       throw new Error(`invalid subject name: ${defaultName}`);
 
-    // set min/max time
+    // Thiết lập thời gian bắt đầu và kết thúc nhỏ nhất/lớn nhất
     minTime = minTime ? (minTime > startDate ? startDate : minTime) : startDate;
     maxTime = maxTime ? (maxTime < endDate ? endDate : maxTime) : endDate;
 
@@ -199,24 +203,38 @@ export function processCalendar(rawData: Array<RawCalendar>): CalendarData {
   };
 }
 
+/**
+ * Nhóm lịch theo tên môn học
+ *
+ * @param data - Mảng các đối tượng Calendar đã được xử lý
+ *
+ * @returns Đối tượng CalendarGroupBySubjectName chứa các môn học đã được nhóm
+ */
 function processGroupByNameCalendar(
   data: Array<Calendar>
 ): CalendarGroupBySubjectName {
   const result: CalendarGroupBySubjectName = {};
-  for (const item of data) {
+
+  data.forEach((item) => {
+    // Nếu môn học chưa tồn tại trong kết quả, khởi tạo đối tượng mới
     if (!(item.nameOnly in result)) {
       result[item.nameOnly] = <CalendarGroupBySubjectNameDetail>{
         majors: item.majors,
+        subjectName: item.nameOnly,
         classes: <CalendarGroupByClass>{},
-
-        // additional properties for calendar page
         selectedClass: '',
         displayOnCalendar: false,
       };
     }
+
     const subject = result[item.nameOnly];
+
+    // Nếu lớp học chưa tồn tại trong môn học, khởi tạo đối tượng mới
     if (!(item.codeOnly in subject.classes)) {
       subject.classes[item.codeOnly] = <CalendarGroupByClassDetail>{
+        majors: item.majors,
+        subjectName: item.nameOnly,
+        subjectClassCode: item.codeOnly,
         details: <CalendarGroupBySession>[
           {
             defaultName: item.defaultName,
@@ -229,6 +247,7 @@ function processGroupByNameCalendar(
         ],
       };
     } else {
+      // Nếu lớp học đã tồn tại, thêm chi tiết buổi học vào
       subject.classes[item.codeOnly].details.push(<
         CalendarGroupBySessionDetail
       >{
@@ -240,30 +259,48 @@ function processGroupByNameCalendar(
         endSession: item.endSession,
       });
     }
-  }
+  });
+
   return result;
 }
-
+/**
+ * Nhóm lịch theo ngành học
+ *
+ * @param data - Đối tượng CalendarGroupBySubjectName chứa các môn học đã được nhóm
+ *
+ * @returns Đối tượng CalendarGroupByMajor chứa các ngành học đã được nhóm
+ */
 function processGroupByMajorCalendar(
   data: CalendarGroupBySubjectName
 ): CalendarGroupByMajor {
   const result: CalendarGroupByMajor = {};
+
+  // Duyệt qua từng môn học trong dữ liệu
   for (const subjectName in data) {
     const subject = data[subjectName];
-    if (!subject.majors || subject.majors.length == 0)
-      subject.majors = ['Chưa phân loại'];
 
-    for (const major of subject.majors)
-      if (!(major in result))
+    // Nếu môn học chưa có ngành học, gán giá trị mặc định
+    if (!subject.majors || subject.majors.length === 0) {
+      subject.majors = ['Chưa phân loại'];
+    }
+
+    // Duyệt qua từng ngành học của môn học
+    for (const major of subject.majors) {
+      // Nếu ngành học chưa tồn tại trong kết quả, khởi tạo đối tượng mới
+      if (!(major in result)) {
         result[major] = <CalendarGroupByMajorDetail>{
+          major,
           subjects: <CalendarGroupBySubjectName>{
             [subjectName]: subject,
           },
-
-          // additional properties for calendar page
-          expanded: false,
+          expanded: false, // Thuộc tính bổ sung cho trang lịch
         };
-      else result[major].subjects[subjectName] = subject;
+      } else {
+        // Nếu ngành học đã tồn tại, thêm môn học vào
+        result[major].subjects[subjectName] = subject;
+      }
+    }
   }
+
   return result;
 }

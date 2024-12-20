@@ -2,6 +2,13 @@
   id="class-info"
   class="rounded-box overflow-scroll overflow-x-hidden overflow-y-overlay max-h-[calc(100vh-18rem)]"
 >
+  <button
+    class="btn btn-sm btn-outline text-sm mb-3 rounded-box sticky float-right top-0 z-10 bg-neutral-content"
+    (click)="auto()"
+  >
+    Tự động xếp lịch
+  </button>
+
   <div
     *ngFor="let item of calendarGroupByMajor"
     class="collapse collapse-plus border border-base-300 bg-base-100 rounded-box w-full mx-auto mb-4"
@@ -34,9 +41,9 @@
                 <span class="font-bold">{{ subject.key }}</span>
               </div>
             </td>
-            <td class="w-40">
+            <td class="w-60 max-w-[33%]">
               <select
-                class="select select-bordered select-sm w-full max-w-xs"
+                class="select select-bordered select-sm w-full"
                 [(ngModel)]="subject.value.selectedClass"
                 (change)="onChange(item[0], subject.key, 'selectedClass')"
               >

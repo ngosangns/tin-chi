@@ -24,7 +24,11 @@ export class ClassInfoComponent {
 
   reset(major: string): void {
     this.resetClass.emit(major);
-    this.onChange$.next({ major, subject: '', field: '' });
+    this.onChange$.emit({ major, subject: '', field: '', auto: false });
+  }
+
+  auto() {
+    this.onChange$.emit({ major: '', subject: '', field: '', auto: true });
   }
 
   onChange(
@@ -41,11 +45,11 @@ export class ClassInfoComponent {
     switch (field) {
       case 'selectedClass':
         if (!subjectData.displayOnCalendar) return;
-        this.onChange$.next({ major, subject, field });
+        this.onChange$.emit({ major, subject, field, auto: false });
         return;
       case 'displayOnCalendar':
         if (!subjectData.selectedClass.length) return;
-        this.onChange$.next({ major, subject, field });
+        this.onChange$.emit({ major, subject, field, auto: false });
         return;
     }
   }
