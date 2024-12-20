@@ -5,6 +5,7 @@
 - Công cụ cần thiết:
   - Node.js
   - yarn: `npm i -g yarn`
+  - ts-node: `npm i -g ts-node`
 
 ## Chạy dự án trên local
 
@@ -16,36 +17,13 @@ yarn start
 ## Cập nhật lịch
 
 1. Clone repo về và chuẩn bị file excel tín chỉ của trường cấp.
-2. Làm theo các bước trong [video hướng dẫn này](https://www.youtube.com/watch?v=rQEv9uwFc18) (Hiện các bạn không cần phải làm bước **thêm tiết lý thuyết vào tiết thực hành** trong video hướng dẫn nữa nhé!).
-3. Copy file excel vào đường dẫn `public/tinchi.xlsx` của project.
-4. Format file JSON theo định dạng dưới đây và copy file JSON vào đường dẫn `public/tinchi.json` của project.
-
-```json
-{
-    "title": "Học kỳ n năm học 20xx - 20xx",
-    "data": [
-        [
-            "Chủ nghĩa xã hội khoa học-2-21 (A18C6D501)",
-            4,
-            "06/06/22",
-            "10/07/22",
-            "1->3"
-        ],
-        [
-            "Chủ nghĩa xã hội khoa học-2-21 (A18C6D501)",
-            6,
-            "06/06/22",
-            "10/07/22",
-            "1->3"
-        ],
-        // ...
-    ]
-}
-```
+2. Copy file excel vào đường dẫn `public/tinchi.xlsx` của project.
+3. Chỉnh sửa biến `TITLE` và `SHEET_DATA` trong `src/scripts/excel-to-json.ts`;
+4. Chạy lệnh `yarn convert`.
 
 ## Deploy
 
-1. Build project: `pnpm install; pnpm build`
+1. Build project: `yarn; yarn build`
 2. Upload code đã build trong thư mục `dist` lên hosting! :D
 3. Nhớ để nguyên credit tác giả nhé!
 

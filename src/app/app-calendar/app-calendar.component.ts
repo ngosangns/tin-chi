@@ -14,12 +14,12 @@ import {
   CalendarTableContentInDate,
   CalendarTableContentInSession,
   RawCalendar,
-} from '../types/calendar';
+} from '../../types/calendar';
 import { CalendarComponent } from './calendar/calendar.component';
 import { ClassInfoComponent } from './class-info/class-info.component';
 import { MoreInfoComponent } from './more-info/more-info.component';
-import { processCalendar } from '../utils/calendar_processing';
-import { EXCEL_PATH, JSON_PATH, SESSIONS } from '../constants/calendar';
+import { processCalendar } from '../../utils/calendar_processing';
+import { EXCEL_PATH, JSON_PATH, SESSIONS } from '../../constants/calendar';
 
 @Component({
   selector: 'app-app-calendar',
@@ -115,7 +115,7 @@ export class AppCalendarComponent {
         isConflict: boolean;
       } = await new Promise((resolve, reject) => {
         const worker = new Worker(
-          new URL('../workers/calendar.worker', import.meta.url)
+          new URL('../../workers/calendar.worker', import.meta.url)
         );
 
         if (auto === this.oldAuto) this.autoTh++;

@@ -6,7 +6,8 @@
     "start": "ng serve",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test",
+    "convert": "ts-node ./src/scripts/excel-to-json.ts"
   },
   "private": true,
   "dependencies": {
@@ -21,6 +22,7 @@
     "axios": "^1.7.9",
     "rxjs": "^7.8.1",
     "tslib": "^2.3.0",
+    "xlsx": "^0.18.5",
     "zone.js": "~0.15.0"
   },
   "devDependencies": {

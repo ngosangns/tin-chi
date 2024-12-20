@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, Input } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
-import { CalendarData, CalendarTableContent } from '../../types/calendar';
+import { CalendarData, CalendarTableContent } from '../../../types/calendar';
 
 @Component({
   selector: 'app-calendar',

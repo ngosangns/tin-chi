@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { AutoMode, CalendarGroupByMajorDetail } from '../../types/calendar';
+import { AutoMode, CalendarGroupByMajorDetail } from '../../../types/calendar';
 import { FormsModule } from '@angular/forms';
 
 @Component({

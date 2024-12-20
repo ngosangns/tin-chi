@@ -4,6 +4,25 @@ import {
 } from '../types/calendar';
 import { countSpecificDayOfWeek } from './date';
 
+/**
+ * Tạo ra các tổ hợp từ các môn học đã chọn.
+ *
+ * @param selectedSubjects - Đối tượng chứa các môn học đã chọn, được nhóm theo tên môn học.
+ * @returns Một mảng các tổ hợp, mỗi tổ hợp là một mảng chứa các chi tiết lớp học.
+ *
+ * Hàm này sử dụng phương pháp đệ quy để tạo ra tất cả các tổ hợp có thể có từ các môn học đã chọn.
+ * - `subjectKeys` là mảng chứa các khóa của các môn học.
+ * - `combinations` là mảng chứa các tổ hợp kết quả.
+ * - Hàm `backtrack` được sử dụng để duyệt qua tất cả các tổ hợp có thể có.
+ *   - `index` là chỉ số hiện tại trong mảng `subjectKeys`.
+ *   - `currentCombination` là tổ hợp hiện tại đang được xây dựng.
+ * - Nếu `index` bằng độ dài của `subjectKeys`, tổ hợp hiện tại đã hoàn thành và được thêm vào `combinations`.
+ * - `subjectKey` là khóa của môn học hiện tại.
+ * - `subjectData` là dữ liệu của môn học hiện tại.
+ * - `classKeys` là mảng chứa các khóa của các lớp học trong môn học hiện tại.
+ * - Với mỗi `classKey`, lớp học tương ứng được thêm vào `currentCombination` và hàm `backtrack` được gọi đệ quy với `index + 1`.
+ * - Sau khi gọi đệ quy, lớp học được loại bỏ khỏi `currentCombination` để thử các tổ hợp khác.
+ */
 export function generateCombinations(
   selectedSubjects: CalendarGroupBySubjectName
 ): CalendarGroupByClassDetail[][] {
@@ -36,6 +55,25 @@ export function generateCombinations(
   return combinations;
 }
 
+/**
+ * Tính toán số lượng tiết học bị trùng lặp giữa các lớp học
+ *
+ * @param {CalendarGroupByClassDetail[]} combination - Mảng các chi tiết lớp học được nhóm lại.
+ * @returns {number} - Số lượng tiết học bị trùng lặp.
+ *
+ * Hàm này duyệt qua tất cả các cặp lớp học trong mảng `combination` và kiểm tra xem có tiết học nào bị trùng lặp hay không.
+ * Nếu có, nó sẽ tính toán số lượng tiết học bị trùng lặp và cộng dồn vào biến `overlap`.
+ *
+ * Các điều kiện để xác định tiết học bị trùng lặp bao gồm:
+ * - Ngày bắt đầu của tiết học 1 phải nhỏ hơn hoặc bằng ngày kết thúc của tiết học 2.
+ * - Ngày kết thúc của tiết học 1 phải lớn hơn hoặc bằng ngày bắt đầu của tiết học 2.
+ * - Tiết bắt đầu của tiết học 1 phải nhỏ hơn hoặc bằng tiết kết thúc của tiết học 2.
+ * - Tiết kết thúc của tiết học 1 phải lớn hơn hoặc bằng tiết bắt đầu của tiết học 2.
+ * - Ngày trong tuần của hai tiết học phải giống nhau.
+ *
+ * Nếu các điều kiện trên đều thỏa mãn, hàm sẽ tính toán số lượng ngày bị trùng lặp và số lượng tiết học bị trùng lặp trong các ngày đó.
+ * Kết quả cuối cùng là tổng số tiết học bị trùng lặp giữa tất cả các lớp học trong nhóm.
+ */
 export function calculateOverlap(
   combination: CalendarGroupByClassDetail[]
 ): number {
