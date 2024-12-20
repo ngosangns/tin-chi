@@ -118,7 +118,8 @@ export function workerAutoCalculateCalendarTableContent(
   calendarGroupByMajor: CalendarGroupByMajor,
   dateList: number[], // Danh sách ngày của học kỳ
   sessions: number[], // Danh sách tiết học (1 -> 16),
-  auto: AutoMode
+  auto: AutoMode,
+  autoTh: number
 ): {
   updatedCalendarTableContent: CalendarTableContent;
   updatedCalendarGroupByMajor: CalendarGroupByMajor;
@@ -141,40 +142,43 @@ export function workerAutoCalculateCalendarTableContent(
   const combinationsOrderByOverlap = combinations
     .map((combination) => ({
       overlap: calculateOverlap(combination),
-      totalMorningSessions: calculateTotalSessionsInSessionRangeOfCombination(
-        combination,
-        START_MORNING_SESSION,
-        END_MORNING_SESSION
-      ),
-      totalAfternoonSessions: calculateTotalSessionsInSessionRangeOfCombination(
-        combination,
-        START_AFTERNOON_SESSION,
-        END_AFTERNOON_SESSION
-      ),
-      totalEveningSessions: calculateTotalSessionsInSessionRangeOfCombination(
-        combination,
-        START_EVENING_SESSION,
-        END_EVENING_SESSION
-      ),
-      combination: combination,
+      totalSessionsInSessionRangeOfCombination: ((combination): number => {
+        switch (auto) {
+          case 'refer-non-overlap-morning':
+            return calculateTotalSessionsInSessionRangeOfCombination(
+              combination,
+              START_MORNING_SESSION,
+              END_MORNING_SESSION
+            );
+          case 'refer-non-overlap-afternoon':
+            return calculateTotalSessionsInSessionRangeOfCombination(
+              combination,
+              START_AFTERNOON_SESSION,
+              END_AFTERNOON_SESSION
+            );
+          case 'refer-non-overlap-evening':
+            return calculateTotalSessionsInSessionRangeOfCombination(
+              combination,
+              START_EVENING_SESSION,
+              END_EVENING_SESSION
+            );
+        }
+        return 0;
+      })(combination),
+      combination,
     }))
     .sort((a, b) => {
       const diff = a.overlap - b.overlap;
-      if (diff === 0 && auto !== 'none' && auto !== 'refer-non-overlap') {
-        switch (auto) {
-          case 'refer-non-overlap-morning':
-            return -(a.totalMorningSessions - b.totalMorningSessions);
-          case 'refer-non-overlap-afternoon':
-            return -(a.totalAfternoonSessions - b.totalAfternoonSessions);
-          case 'refer-non-overlap-evening':
-            return -(a.totalEveningSessions - b.totalEveningSessions);
-        }
-      }
+      if (diff === 0)
+        return -(
+          a.totalSessionsInSessionRangeOfCombination -
+          b.totalSessionsInSessionRangeOfCombination
+        );
       return diff;
     });
 
   const bestCombination = combinationsOrderByOverlap.length
-    ? combinationsOrderByOverlap[0]
+    ? combinationsOrderByOverlap[autoTh % combinationsOrderByOverlap.length]
     : undefined;
 
   const updatedCalendarGroupByMajor = bestCombination
@@ -212,19 +216,13 @@ self.onmessage = (message: {
     data: any;
   };
 }) => {
-  const data = message.data.data as {
-    calendarTableContent: CalendarTableContent;
-    calendar: CalendarData;
-    sessions: number[];
-    auto: AutoMode;
-  };
-
   if (message.data.type === 'calculateCalendarTableContent') {
     const data = message.data.data as {
       calendarTableContent: CalendarTableContent;
       calendar: CalendarData;
       sessions: number[];
       auto: AutoMode;
+      autoTh: number;
     };
 
     switch (data.auto) {
@@ -246,7 +244,8 @@ self.onmessage = (message: {
             data.calendar.calendarGroupByMajor,
             data.calendar.dateList,
             data.sessions,
-            data.auto
+            data.auto,
+            data.autoTh
           )
         );
     }

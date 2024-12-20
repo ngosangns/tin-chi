@@ -14,6 +14,8 @@ export class ClassInfoComponent {
     string, // Tên khóa / ngành
     CalendarGroupByMajorDetail // Chi tiết lịch học của khóa / ngành
   ][] = [];
+  @Input('autoTh') autoTh: number = -1;
+  @Input('oldAuto') oldAuto: AutoMode = 'none';
 
   @Output('resetClass') readonly resetClass = new EventEmitter();
   @Output('onChange') readonly onChange$ = new EventEmitter();

@@ -72,16 +72,11 @@
             "
             class="mb-3"
           >
-            <p class="flex gap-3">
-              <span class="border rounded-box px-3 py-1">{{
-                subject.key
-              }}</span>
-              <span class="border rounded-box px-3 py-1">
-                {{
-                  subject.value.classes[subject.value.selectedClass].details[0]
-                    .defaultName
-                }}
-              </span>
+            <p class="border rounded-box px-3 py-1 inline-block">
+              {{
+                subject.value.classes[subject.value.selectedClass].details[0]
+                  .defaultName
+              }}
             </p>
           </li>
         </ng-template>
@@ -97,6 +92,8 @@
       [calendarGroupByMajor]="calendarGroupByMajor"
       (resetClass)="resetClass($event)"
       (onChange)="triggerRecalculateTableContent($event)"
+      [oldAuto]="oldAuto"
+      [autoTh]="autoTh"
     >
     </app-class-info>
 

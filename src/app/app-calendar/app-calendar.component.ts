@@ -19,6 +19,7 @@ import { CalendarComponent } from './calendar/calendar.component';
 import { ClassInfoComponent } from './class-info/class-info.component';
 import { MoreInfoComponent } from './more-info/more-info.component';
 import { processCalendar } from '../utils/calendar_processing';
+import { EXCEL_PATH, JSON_PATH, SESSIONS } from '../constants/calendar';
 
 @Component({
   selector: 'app-app-calendar',
@@ -36,10 +37,8 @@ import { processCalendar } from '../utils/calendar_processing';
   styleUrl: './app-calendar.component.scss',
 })
 export class AppCalendarComponent {
-  readonly SESSIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
-  readonly DEFAULT_CLASS_LABEL = 'Chọn lớp';
-  readonly JSON_PATH = `/tinchi.json?timestamp=${new Date().getTime()}`;
-  readonly EXCEL_PATH = `/tinchi.xlsx?timestamp=${new Date().getTime()}`;
+  SESSIONS = SESSIONS;
+  EXCEL_PATH = EXCEL_PATH;
 
   readonly loading$: BehaviorSubject<boolean>;
   readonly calendar$: BehaviorSubject<CalendarData | undefined>;
@@ -48,6 +47,8 @@ export class AppCalendarComponent {
   title: string = '';
   showTab: 'class-info' | 'calendar' | 'more-info' = 'class-info';
   isConflict: boolean = false;
+  autoTh: number = -1;
+  oldAuto: AutoMode = 'none';
 
   calendarGroupByMajor: [string, CalendarGroupByMajorDetail][] = [];
   calendarGroupByMajorSub: Subscription;
@@ -70,7 +71,7 @@ export class AppCalendarComponent {
 
   async fetchData(): Promise<void> {
     try {
-      const response: any = await fetch(this.JSON_PATH);
+      const response: any = await fetch(JSON_PATH);
       const data = await response.json();
 
       // Lấy tiêu đề
@@ -86,7 +87,7 @@ export class AppCalendarComponent {
       const calendarTableContent: CalendarTableContent = {};
       for (const date of calendar.dateList) {
         calendarTableContent[date] = <CalendarTableContentInDate>{};
-        for (const session of this.SESSIONS)
+        for (const session of SESSIONS)
           calendarTableContent[date][session] =
             [] as CalendarTableContentInSession;
       }
@@ -116,6 +117,11 @@ export class AppCalendarComponent {
         const worker = new Worker(
           new URL('../workers/calendar.worker', import.meta.url)
         );
+
+        if (auto === this.oldAuto) this.autoTh++;
+        else if (auto !== 'none') this.autoTh = 0;
+        else this.autoTh = -1;
+
         worker.onmessage = (res: {
           data: {
             updatedCalendarTableContent: CalendarTableContent;
@@ -129,13 +135,16 @@ export class AppCalendarComponent {
           data: {
             calendarTableContent: this.calendarTableContent$.value,
             calendar: this.calendar$.value,
-            sessions: this.SESSIONS,
+            sessions: SESSIONS,
             auto,
+            autoTh: this.autoTh,
           },
         });
       });
 
       if (result) {
+        this.oldAuto = auto;
+
         // Cập nhật dữ liệu lịch học sau khi xử lý
         this.calendarTableContent$.next(result.updatedCalendarTableContent);
         const calendar = this.calendar$.value;
@@ -144,9 +153,6 @@ export class AppCalendarComponent {
           this.calendar$.next(calendar);
         }
         this.isConflict = result.isConflict;
-
-        // Cập nhật giao diện
-        this.cdr.detectChanges();
       }
     } catch (e) {
       alert('Có lỗi xảy ra, không thể cập nhật dữ liệu!');
