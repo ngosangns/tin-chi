@@ -94,8 +94,4 @@ export type AutoMode =
   | 'refer-non-overlap-afternoon'
   | 'refer-non-overlap-evening';
 
-export type CombinationCache = {
-  [key: string]: ClassCombination[];
-};
-
 export type ClassCombination = CalendarGroupByClassDetail[];

@@ -9,20 +9,23 @@ import {
 import {
   AutoMode,
   CalendarData,
-  CalendarGroupByClassDetail,
   CalendarGroupByMajor,
   CalendarGroupBySessionDetail,
   CalendarGroupBySubjectName,
   CalendarTableContent,
-  CombinationCache,
 } from '../types/calendar';
 import {
   calculateOverlap,
-  calculateTotalSessionsInSessionRangeOfCombination,
+  calculateTotalSessionsInSessionRange,
   generateCombinations,
 } from '../utils/calendar_overlap';
 
-const conbinationCache: CombinationCache = {};
+const overlapCache: {
+  [key: string]: number;
+} = {};
+const overlapSessionCache: {
+  [key: string]: number;
+} = {};
 
 function workerCalculateCalendarTableContent(
   calendarTableContent: CalendarTableContent,
@@ -142,29 +145,36 @@ export function workerAutoCalculateCalendarTableContent(
     <CalendarGroupBySubjectName>{}
   );
 
-  const combinations = generateCombinations(selectedSubjects, conbinationCache);
+  const start = performance.now();
+  const combinations = generateCombinations(selectedSubjects);
+  console.log('Generate combinations:', performance.now() - start);
+
+  const start2 = performance.now();
   const combinationsOrderByOverlap = combinations
     .map((combination) => ({
-      overlap: calculateOverlap(combination),
+      overlap: calculateOverlap(combination, overlapCache),
       totalSessionsInSessionRangeOfCombination: ((combination): number => {
         switch (auto) {
           case 'refer-non-overlap-morning':
-            return calculateTotalSessionsInSessionRangeOfCombination(
+            return calculateTotalSessionsInSessionRange(
               combination,
               START_MORNING_SESSION,
-              END_MORNING_SESSION
+              END_MORNING_SESSION,
+              overlapSessionCache
             );
           case 'refer-non-overlap-afternoon':
-            return calculateTotalSessionsInSessionRangeOfCombination(
+            return calculateTotalSessionsInSessionRange(
               combination,
               START_AFTERNOON_SESSION,
-              END_AFTERNOON_SESSION
+              END_AFTERNOON_SESSION,
+              overlapSessionCache
             );
           case 'refer-non-overlap-evening':
-            return calculateTotalSessionsInSessionRangeOfCombination(
+            return calculateTotalSessionsInSessionRange(
               combination,
               START_EVENING_SESSION,
-              END_EVENING_SESSION
+              END_EVENING_SESSION,
+              overlapSessionCache
             );
         }
         return 0;
@@ -180,11 +190,13 @@ export function workerAutoCalculateCalendarTableContent(
         );
       return diff;
     });
+  console.log('Calculate overlap:', performance.now() - start2);
 
   const bestCombination = combinationsOrderByOverlap.length
     ? combinationsOrderByOverlap[autoTh % combinationsOrderByOverlap.length]
     : undefined;
 
+  const start3 = performance.now();
   const updatedCalendarGroupByMajor = bestCombination
     ? (() => {
         const clonedCalendarGroupByMajor =
@@ -206,6 +218,7 @@ export function workerAutoCalculateCalendarTableContent(
         sessions
       ).updatedCalendarTableContent
     : calendarTableContent;
+  console.log('Update calendar:', performance.now() - start3);
 
   return {
     updatedCalendarTableContent,

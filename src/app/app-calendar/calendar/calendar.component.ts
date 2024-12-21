@@ -2,6 +2,14 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 import { CalendarData, CalendarTableContent } from '../../../types/calendar';
+import {
+  END_AFTERNOON_SESSION,
+  END_EVENING_SESSION,
+  END_MORNING_SESSION,
+  START_AFTERNOON_SESSION,
+  START_EVENING_SESSION,
+  START_MORNING_SESSION,
+} from '../../../constants/calendar';
 
 @Component({
   selector: 'app-calendar',
@@ -12,6 +20,13 @@ import { CalendarData, CalendarTableContent } from '../../../types/calendar';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CalendarComponent {
+  START_MORNING_SESSION = START_MORNING_SESSION;
+  END_MORNING_SESSION = END_MORNING_SESSION;
+  START_AFTERNOON_SESSION = START_AFTERNOON_SESSION;
+  END_AFTERNOON_SESSION = END_AFTERNOON_SESSION;
+  START_EVENING_SESSION = START_EVENING_SESSION;
+  END_EVENING_SESSION = END_EVENING_SESSION;
+
   @Input('calendar$') calendar$: BehaviorSubject<CalendarData | undefined>;
   @Input('calendarTableContent$')
   calendarTableContent$: BehaviorSubject<CalendarTableContent>;
@@ -44,17 +59,6 @@ export class CalendarComponent {
     if (shift < 7) return 'morning';
     if (shift < 13) return 'afternoon';
     return 'evening';
-  }
-
-  calendarBackgroundClass(session: number): string {
-    switch (this.checkSession(session)) {
-      case 'afternoon':
-        return 'bg-secondary';
-      case 'evening':
-        return 'bg-neutral';
-      default:
-        return 'bg-accent';
-    }
   }
 
   processCalendarInDate(

@@ -29,10 +29,11 @@
     <div
       *ngFor="let num of [].constructor(16); let i = index"
       class="text-center flex items-center justify-center sticky top-0 text-sm"
-      [ngClass]="[
-        calendarBackgroundClass(i + 1) + '-content',
-        calendarBackgroundClass(i + 1)
-      ]"
+      [ngClass]="{
+        'text-accent-content bg-accent': START_MORNING_SESSION <= i + 1 && i + 1 <= END_MORNING_SESSION,
+        'text-secondary-content bg-secondary': START_AFTERNOON_SESSION <= i + 1 && i + 1 <= END_AFTERNOON_SESSION,
+        'text-neutral-content bg-neutral': START_EVENING_SESSION <= i + 1 && i + 1 <= END_EVENING_SESSION,
+      }"
     >
       {{ i + 1 }}
     </div>

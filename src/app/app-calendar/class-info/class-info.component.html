@@ -3,6 +3,59 @@
   class="overflow-scroll overflow-x-hidden overflow-y-overlay max-h-[calc(100vh-18rem)]"
 >
   <div
+    class="sticky top-0 py-3 mb-3 rounded-b-md z-10 flex gap-3 flex-wrap max-w-full bg-base-100"
+  >
+    <button
+      class="btn btn-sm btn-outline text-sm"
+      (click)="auto('refer-non-overlap')"
+    >
+      Tự động xếp lịch
+      <span
+        class="btn btn-active btn-xs"
+        *ngIf="oldAuto === 'refer-non-overlap' && autoTh > -1"
+      >
+        {{ autoTh + 1 }}
+      </span>
+    </button>
+    <button
+      class="btn btn-sm btn-outline text-sm"
+      (click)="auto('refer-non-overlap-morning')"
+    >
+      Tự động xếp lịch (ưu tiên buổi sáng)
+      <span
+        class="btn btn-active btn-xs"
+        *ngIf="oldAuto === 'refer-non-overlap-morning' && autoTh > -1"
+      >
+        {{ autoTh + 1 }}
+      </span>
+    </button>
+    <button
+      class="btn btn-sm btn-outline text-sm"
+      (click)="auto('refer-non-overlap-afternoon')"
+    >
+      Tự động xếp lịch (ưu tiên buổi chiều)
+      <span
+        class="btn btn-active btn-xs"
+        *ngIf="oldAuto === 'refer-non-overlap-afternoon' && autoTh > -1"
+      >
+        {{ autoTh + 1 }}
+      </span>
+    </button>
+    <button
+      class="btn btn-sm btn-outline text-sm"
+      (click)="auto('refer-non-overlap-evening')"
+    >
+      Tự động xếp lịch (ưu tiên buổi tối)
+      <span
+        class="btn btn-active btn-xs"
+        *ngIf="oldAuto === 'refer-non-overlap-evening' && autoTh > -1"
+      >
+        {{ autoTh + 1 }}
+      </span>
+    </button>
+  </div>
+
+  <div
     *ngFor="let item of calendarGroupByMajor"
     class="collapse collapse-plus border border-base-content bg-base-100 w-full mx-auto mb-4"
   >
@@ -77,58 +130,5 @@
         </tbody>
       </table>
     </div>
-  </div>
-
-  <div
-    class="sticky bottom-0 p-3 z-10 flex gap-3 flex-wrap max-w-full bg-neutral-content"
-  >
-    <button
-      class="btn btn-sm btn-outline text-sm border-neutral text-neutral"
-      (click)="auto('refer-non-overlap')"
-    >
-      Tự động xếp lịch
-      <span
-        class="btn btn-active btn-xs"
-        *ngIf="oldAuto === 'refer-non-overlap' && autoTh > -1"
-      >
-        {{ autoTh + 1 }}
-      </span>
-    </button>
-    <button
-      class="btn btn-sm btn-outline text-sm border-neutral text-neutral"
-      (click)="auto('refer-non-overlap-morning')"
-    >
-      Tự động xếp lịch (ưu tiên buổi sáng)
-      <span
-        class="btn btn-active btn-xs"
-        *ngIf="oldAuto === 'refer-non-overlap-morning' && autoTh > -1"
-      >
-        {{ autoTh + 1 }}
-      </span>
-    </button>
-    <button
-      class="btn btn-sm btn-outline text-sm border-neutral text-neutral"
-      (click)="auto('refer-non-overlap-afternoon')"
-    >
-      Tự động xếp lịch (ưu tiên buổi chiều)
-      <span
-        class="btn btn-active btn-xs"
-        *ngIf="oldAuto === 'refer-non-overlap-afternoon' && autoTh > -1"
-      >
-        {{ autoTh + 1 }}
-      </span>
-    </button>
-    <button
-      class="btn btn-sm btn-outline text-sm border-neutral text-neutral"
-      (click)="auto('refer-non-overlap-evening')"
-    >
-      Tự động xếp lịch (ưu tiên buổi tối)
-      <span
-        class="btn btn-active btn-xs"
-        *ngIf="oldAuto === 'refer-non-overlap-evening' && autoTh > -1"
-      >
-        {{ autoTh + 1 }}
-      </span>
-    </button>
   </div>
 </div>
