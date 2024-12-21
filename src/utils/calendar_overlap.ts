@@ -67,9 +67,14 @@ export function calculateOverlap(
   }
 ): number {
   let overlap = 0;
-  let combinationCacheKey = combination
-    .map((cd) => [cd.majors[0], cd.subjectName, cd.subjectClassCode].join('-'))
-    .join('|');
+
+  const cacheKeyPrefix = 'overlap';
+  const combinationCacheKey = [
+    cacheKeyPrefix,
+    ...combination.map((cd) =>
+      [cd.majors[0], cd.subjectName, cd.subjectClassCode].join('-')
+    ),
+  ].join('|');
 
   if (cache && cache.hasOwnProperty(combinationCacheKey))
     return cache[combinationCacheKey];
@@ -80,12 +85,17 @@ export function calculateOverlap(
       const classDetail2 = combination[j];
 
       const pairCacheKey = [
-        classDetail1.majors[0],
-        classDetail1.subjectName,
-        classDetail1.subjectClassCode,
-        classDetail2.majors[0],
-        classDetail2.subjectName,
-        classDetail2.subjectClassCode,
+        cacheKeyPrefix,
+        [
+          classDetail1.majors[0],
+          classDetail1.subjectName,
+          classDetail1.subjectClassCode,
+        ].join('-'),
+        [
+          classDetail2.majors[0],
+          classDetail2.subjectName,
+          classDetail2.subjectClassCode,
+        ].join('-'),
       ].join('|');
 
       if (cache && cache.hasOwnProperty(pairCacheKey)) {

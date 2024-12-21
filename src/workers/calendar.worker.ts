@@ -20,10 +20,7 @@ import {
   generateCombinations,
 } from '../utils/calendar_overlap';
 
-const overlapCache: {
-  [key: string]: number;
-} = {};
-const overlapSessionCache: {
+const cache: {
   [key: string]: number;
 } = {};
 
@@ -152,7 +149,7 @@ export function workerAutoCalculateCalendarTableContent(
   const start2 = performance.now();
   const combinationsOrderByOverlap = combinations
     .map((combination) => ({
-      overlap: calculateOverlap(combination, overlapCache),
+      overlap: calculateOverlap(combination, cache),
       totalSessionsInSessionRangeOfCombination: ((combination): number => {
         switch (auto) {
           case 'refer-non-overlap-morning':
@@ -160,21 +157,21 @@ export function workerAutoCalculateCalendarTableContent(
               combination,
               START_MORNING_SESSION,
               END_MORNING_SESSION,
-              overlapSessionCache
+              cache
             );
           case 'refer-non-overlap-afternoon':
             return calculateTotalSessionsInSessionRange(
               combination,
               START_AFTERNOON_SESSION,
               END_AFTERNOON_SESSION,
-              overlapSessionCache
+              cache
             );
           case 'refer-non-overlap-evening':
             return calculateTotalSessionsInSessionRange(
               combination,
               START_EVENING_SESSION,
               END_EVENING_SESSION,
-              overlapSessionCache
+              cache
             );
         }
         return 0;
