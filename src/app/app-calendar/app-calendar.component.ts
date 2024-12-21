@@ -1,9 +1,12 @@
 import { AsyncPipe, CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  ChangeDetectorRef,
+  Component,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { BehaviorSubject, Subscription } from 'rxjs';
-import { FooterComponent } from '../footer/footer.component';
-import { HeaderComponent } from '../header/header.component';
+import { EXCEL_PATH, JSON_PATH, SESSIONS } from '../../constants/calendar';
 import {
   AutoMode,
   CalendarData,
@@ -15,14 +18,16 @@ import {
   CalendarTableContentInSession,
   RawCalendar,
 } from '../../types/calendar';
+import { processCalendar } from '../../utils/calendar_processing';
+import { FooterComponent } from '../footer/footer.component';
+import { HeaderComponent } from '../header/header.component';
 import { CalendarComponent } from './calendar/calendar.component';
 import { ClassInfoComponent } from './class-info/class-info.component';
 import { MoreInfoComponent } from './more-info/more-info.component';
-import { processCalendar } from '../../utils/calendar_processing';
-import { EXCEL_PATH, JSON_PATH, SESSIONS } from '../../constants/calendar';
 
 @Component({
   selector: 'app-app-calendar',
+  standalone: true,
   imports: [
     CommonModule,
     FormsModule,
@@ -35,6 +40,7 @@ import { EXCEL_PATH, JSON_PATH, SESSIONS } from '../../constants/calendar';
   ],
   templateUrl: './app-calendar.component.html',
   styleUrl: './app-calendar.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AppCalendarComponent {
   SESSIONS = SESSIONS;
@@ -49,9 +55,14 @@ export class AppCalendarComponent {
   isConflict: boolean = false;
   autoTh: number = -1;
   oldAuto: AutoMode = 'none';
+  oldTotalSelectedClass = 0;
 
   calendarGroupByMajor: [string, CalendarGroupByMajorDetail][] = [];
   calendarGroupByMajorSub: Subscription;
+
+  private readonly calendarWorker = new Worker(
+    new URL('../../workers/calendar.worker', import.meta.url)
+  );
 
   constructor(private cdr: ChangeDetectorRef) {
     this.loading$ = new BehaviorSubject<boolean>(true);
@@ -63,6 +74,35 @@ export class AppCalendarComponent {
         calendar?.calendarGroupByMajor || []
       ).sort((a, b) => a[0].localeCompare(b[0]));
     });
+
+    this.calendarWorker.onmessage = (res: {
+      data: {
+        updatedCalendarTableContent: CalendarTableContent;
+        updatedCalendarGroupByMajor: CalendarGroupByMajor;
+        isConflict: boolean;
+      };
+    }) => {
+      if (res.data) {
+        // Cập nhật dữ liệu lịch học sau khi xử lý
+        this.calendarTableContent$.next(res.data.updatedCalendarTableContent);
+        const calendar = this.calendar$.value;
+        if (calendar) {
+          calendar.calendarGroupByMajor = res.data.updatedCalendarGroupByMajor;
+          this.calendar$.next(calendar);
+        }
+        this.isConflict = res.data.isConflict;
+      } else {
+        console.error('No data received from worker!');
+        alert('Có lỗi xảy ra, không thể cập nhật dữ liệu!');
+      }
+
+      this.loading$.next(false);
+    };
+    this.calendarWorker.onerror = (err: any) => {
+      console.error(err);
+      alert('Có lỗi xảy ra, không thể cập nhật dữ liệu!');
+      this.loading$.next(false);
+    };
   }
 
   ngOnInit(): void {
@@ -107,58 +147,38 @@ export class AppCalendarComponent {
   }
 
   async calculateCalendarTableContent(auto: AutoMode = 'none'): Promise<void> {
-    try {
-      if (auto != 'none') this.loading$.next(true);
-      const result: {
-        updatedCalendarTableContent: CalendarTableContent;
-        updatedCalendarGroupByMajor: CalendarGroupByMajor;
-        isConflict: boolean;
-      } = await new Promise((resolve, reject) => {
-        const worker = new Worker(
-          new URL('../../workers/calendar.worker', import.meta.url)
-        );
+    if (auto != 'none') this.loading$.next(true);
 
-        if (auto === this.oldAuto) this.autoTh++;
-        else if (auto !== 'none') this.autoTh = 0;
-        else this.autoTh = -1;
+    if (auto !== this.oldAuto || auto === 'none') this.autoTh = 0;
+    else this.autoTh++;
 
-        worker.onmessage = (res: {
-          data: {
-            updatedCalendarTableContent: CalendarTableContent;
-            updatedCalendarGroupByMajor: CalendarGroupByMajor;
-            isConflict: boolean;
-          };
-        }) => resolve(res.data);
-        worker.onerror = (err: any) => reject(err);
-        worker.postMessage({
-          type: 'calculateCalendarTableContent',
-          data: {
-            calendarTableContent: this.calendarTableContent$.value,
-            calendar: this.calendar$.value,
-            sessions: SESSIONS,
-            auto,
-            autoTh: this.autoTh,
-          },
-        });
-      });
+    this.oldAuto = auto;
 
-      if (result) {
-        this.oldAuto = auto;
+    this.calendarWorker.postMessage({
+      data: {
+        calendarTableContent: this.calendarTableContent$.value,
+        calendar: this.calendar$.value,
+        sessions: SESSIONS,
+        auto,
+        autoTh: this.autoTh,
+      },
+    });
+  }
 
-        // Cập nhật dữ liệu lịch học sau khi xử lý
-        this.calendarTableContent$.next(result.updatedCalendarTableContent);
-        const calendar = this.calendar$.value;
-        if (calendar) {
-          calendar.calendarGroupByMajor = result.updatedCalendarGroupByMajor;
-          this.calendar$.next(calendar);
-        }
-        this.isConflict = result.isConflict;
+  totalDisplayOnCalendarClass(): number {
+    const calendar = this.calendar$.value;
+    if (!calendar) return 0;
+
+    let total = 0;
+    for (const major in calendar.calendarGroupByMajor) {
+      const majorCalendar = calendar.calendarGroupByMajor[major];
+      for (const subjectName in majorCalendar.subjects) {
+        const subject = majorCalendar.subjects[subjectName];
+        if (subject.displayOnCalendar) total++;
       }
-    } catch (e) {
-      alert('Có lỗi xảy ra, không thể cập nhật dữ liệu!');
-    } finally {
-      if (auto != 'none') this.loading$.next(false);
     }
+
+    return total;
   }
 
   triggerRecalculateTableContent(e: Event) {
@@ -168,6 +188,9 @@ export class AppCalendarComponent {
       field: 'selectedClass' | 'displayOnCalendar';
       auto: AutoMode;
     };
+
+    if (data.field === 'displayOnCalendar') this.autoTh = 0;
+
     this.calculateCalendarTableContent(data.auto);
   }
 
@@ -183,6 +206,18 @@ export class AppCalendarComponent {
       subjects[subjectName].displayOnCalendar = false;
       subjects[subjectName].selectedClass = '';
     }
+  }
+
+  selectAll(e: Event): void {
+    const major = e as unknown as string;
+
+    const calendar = this.calendar$.value;
+    const majorCalendar =
+      calendar?.calendarGroupByMajor?.[major] ?? <CalendarGroupByMajor>{};
+
+    const subjects = majorCalendar.subjects as CalendarGroupBySubjectName;
+    for (const subjectName in subjects)
+      subjects[subjectName].displayOnCalendar = true;
   }
 
   switchTab(tab: 'class-info' | 'calendar' | 'more-info'): void {

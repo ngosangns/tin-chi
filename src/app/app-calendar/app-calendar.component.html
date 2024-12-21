@@ -5,13 +5,13 @@
   <div class="flex gap-3 print:hidden">
     <button
       *ngIf="title?.length"
-      class="btn mb-2 btn-outline btn-active cursor-default rounded-box border-none hover:bg-neural"
+      class="btn mb-2 btn-outline btn-active cursor-default border-none hover:bg-neural"
     >
       {{ title }}
     </button>
 
     <button
-      class="btn mb-2 rounded-box border-none hover:bg-base-200"
+      class="btn mb-2 border-none hover:bg-base-200"
       (click)="switchTab('class-info')"
       [ngClass]="{ 'btn-primary hover:bg-primary': showTab === 'class-info' }"
     >
@@ -25,7 +25,7 @@
       data-tip="Trùng lịch"
     >
       <button
-        class="btn mb-2 rounded-box border-none hover:bg-base-200"
+        class="btn mb-2 border-none hover:bg-base-200"
         (click)="switchTab('calendar')"
         [ngClass]="{ 'btn-primary hover:bg-primary': showTab === 'calendar' }"
       >
@@ -34,7 +34,7 @@
     </div>
 
     <button
-      class="btn mb-2 rounded-box border-none hover:bg-base-200"
+      class="btn mb-2 border-none hover:bg-base-200"
       (click)="switchTab('more-info')"
       [ngClass]="{ 'btn-primary hover:bg-primary': showTab === 'more-info' }"
     >
@@ -44,7 +44,7 @@
     <div class="flex-grow"></div>
 
     <button
-      class="btn mb-2 rounded-box border-none"
+      class="btn mb-2 border-none"
       (click)="print()"
       [disabled]="loading$ | async"
     >
@@ -72,7 +72,7 @@
             "
             class="mb-3"
           >
-            <p class="border rounded-box px-3 py-1 inline-block">
+            <p class="border px-3 py-1 inline-block">
               {{
                 subject.value.classes[subject.value.selectedClass].details[0]
                   .defaultName
@@ -91,7 +91,9 @@
       }"
       [calendarGroupByMajor]="calendarGroupByMajor"
       (resetClass)="resetClass($event)"
+      (selectAll)="selectAll($event)"
       (onChange)="triggerRecalculateTableContent($event)"
+      (onDisplayOnCalendarChange)="autoTh = -1"
       [oldAuto]="oldAuto"
       [autoTh]="autoTh"
     >
@@ -121,7 +123,7 @@
 
     <!-- Loading -->
     <div
-      class="rounded-box w-full h-[calc(100vh-18rem)] items-center justify-center bg-base-200 absolute top-0 left-0 opacity-50 z-10 hidden print:!hidden"
+      class="w-full h-[calc(100vh-18rem)] items-center justify-center bg-base-200 absolute top-0 left-0 opacity-50 z-10 hidden print:!hidden"
       [ngClass]="{
         '!flex': (loading$ | async),
       }"

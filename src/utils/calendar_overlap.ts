@@ -1,6 +1,8 @@
 import {
   CalendarGroupByClassDetail,
   CalendarGroupBySubjectName,
+  ClassCombination,
+  CombinationCache,
 } from '../types/calendar';
 import { countSpecificDayOfWeek } from './date';
 
@@ -24,30 +26,66 @@ import { countSpecificDayOfWeek } from './date';
  * - Sau khi gọi đệ quy, lớp học được loại bỏ khỏi `currentCombination` để thử các tổ hợp khác.
  */
 export function generateCombinations(
-  selectedSubjects: CalendarGroupBySubjectName
-): CalendarGroupByClassDetail[][] {
+  selectedSubjects: CalendarGroupBySubjectName,
+  cache?: CombinationCache
+): ClassCombination[] {
   const subjectKeys = Object.keys(selectedSubjects);
-  const combinations: CalendarGroupByClassDetail[][] = [];
+  const combinations: ClassCombination[] = [];
 
   function backtrack(
     index: number,
-    currentCombination: CalendarGroupByClassDetail[]
-  ) {
-    if (index === subjectKeys.length) {
-      // clone currentCombination completed result to avoid .pop()
-      combinations.push([...currentCombination]);
-      return;
+    currentCombination: ClassCombination
+  ): ClassCombination[] {
+    const subjectKey = subjectKeys[index];
+
+    const subjectData = selectedSubjects[subjectKey];
+    if (!subjectData) return [];
+
+    const subjectCache: ClassCombination[] = [];
+    let remainSubjectsCache: ClassCombination[] = [];
+    let needToCalculateRemainSubjectsCache = true;
+    const remainSubjectKeys = subjectKeys.slice(index + 1);
+
+    if (!remainSubjectKeys.length) needToCalculateRemainSubjectsCache = false;
+    else if (cache && cache[remainSubjectKeys.join('|')] != undefined) {
+      remainSubjectsCache = cache[remainSubjectKeys.join('|')];
+      needToCalculateRemainSubjectsCache = false;
     }
 
-    const subjectKey = subjectKeys[index];
-    const subjectData = selectedSubjects[subjectKey];
-    const classKeys = Object.keys(subjectData.classes);
-
-    classKeys.forEach((classKey) => {
+    Object.keys(subjectData.classes).forEach((classKey) => {
       currentCombination.push(subjectData.classes[classKey]);
-      backtrack(index + 1, currentCombination);
+
+      if (index === subjectKeys.length - 1) {
+        const completedCombination = [...currentCombination];
+        combinations.push(completedCombination); // clone currentCombination completed result to avoid .pop()
+        subjectCache.push(completedCombination.slice(index));
+      } else {
+        if (needToCalculateRemainSubjectsCache) {
+          remainSubjectsCache = backtrack(index + 1, currentCombination);
+          needToCalculateRemainSubjectsCache = false;
+        }
+
+        // merge remain subject cache with current subject class
+        for (const slicedClassCombination of remainSubjectsCache) {
+          subjectCache.push([
+            subjectData.classes[classKey],
+            ...slicedClassCombination,
+          ]);
+          combinations.push([...currentCombination, ...slicedClassCombination]); // clone currentCombination completed result to avoid .pop()
+        }
+      }
+
       currentCombination.pop();
     });
+
+    // cache
+    if (cache && Object.keys(subjectCache).length) {
+      const combinedSubjectKeys = [subjectKey, ...remainSubjectKeys].join('|');
+      if (!cache[combinedSubjectKeys]) cache[combinedSubjectKeys] = [];
+      cache[combinedSubjectKeys].push(...subjectCache);
+    }
+
+    return subjectCache;
   }
 
   backtrack(0, []);

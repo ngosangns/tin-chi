@@ -9,16 +9,20 @@ import {
 import {
   AutoMode,
   CalendarData,
+  CalendarGroupByClassDetail,
   CalendarGroupByMajor,
   CalendarGroupBySessionDetail,
   CalendarGroupBySubjectName,
   CalendarTableContent,
+  CombinationCache,
 } from '../types/calendar';
 import {
   calculateOverlap,
   calculateTotalSessionsInSessionRangeOfCombination,
   generateCombinations,
 } from '../utils/calendar_overlap';
+
+const conbinationCache: CombinationCache = {};
 
 function workerCalculateCalendarTableContent(
   calendarTableContent: CalendarTableContent,
@@ -138,7 +142,7 @@ export function workerAutoCalculateCalendarTableContent(
     <CalendarGroupBySubjectName>{}
   );
 
-  const combinations = generateCombinations(selectedSubjects);
+  const combinations = generateCombinations(selectedSubjects, conbinationCache);
   const combinationsOrderByOverlap = combinations
     .map((combination) => ({
       overlap: calculateOverlap(combination),
@@ -216,38 +220,36 @@ self.onmessage = (message: {
     data: any;
   };
 }) => {
-  if (message.data.type === 'calculateCalendarTableContent') {
-    const data = message.data.data as {
-      calendarTableContent: CalendarTableContent;
-      calendar: CalendarData;
-      sessions: number[];
-      auto: AutoMode;
-      autoTh: number;
-    };
+  const data = message.data.data as {
+    calendarTableContent: CalendarTableContent;
+    calendar: CalendarData;
+    sessions: number[];
+    auto: AutoMode;
+    autoTh: number;
+  };
 
-    switch (data.auto) {
-      case 'none': {
-        self.postMessage(
-          workerCalculateCalendarTableContent(
-            data.calendarTableContent,
-            data.calendar.calendarGroupByMajor,
-            data.calendar.dateList,
-            data.sessions
-          )
-        );
-        break;
-      }
-      default:
-        self.postMessage(
-          workerAutoCalculateCalendarTableContent(
-            data.calendarTableContent,
-            data.calendar.calendarGroupByMajor,
-            data.calendar.dateList,
-            data.sessions,
-            data.auto,
-            data.autoTh
-          )
-        );
+  switch (data.auto) {
+    case 'none': {
+      self.postMessage(
+        workerCalculateCalendarTableContent(
+          data.calendarTableContent,
+          data.calendar.calendarGroupByMajor,
+          data.calendar.dateList,
+          data.sessions
+        )
+      );
+      break;
     }
-  } else self.postMessage(null);
+    default:
+      self.postMessage(
+        workerAutoCalculateCalendarTableContent(
+          data.calendarTableContent,
+          data.calendar.calendarGroupByMajor,
+          data.calendar.dateList,
+          data.sessions,
+          data.auto,
+          data.autoTh
+        )
+      );
+  }
 };

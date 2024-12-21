@@ -1,6 +1,6 @@
 <div
   id="calendar-table-container"
-  class="rounded-box overflow-scroll overflow-x-hidden overflow-y-overlay max-h-[calc(100vh-18rem)] print:!max-h-auto print:!overflow-visible"
+  class="overflow-scroll overflow-x-hidden overflow-y-overlay max-h-[calc(100vh-18rem)] print:!max-h-auto print:!overflow-visible"
 >
   <div
     id="calendar-table"
@@ -30,7 +30,7 @@
       *ngFor="let num of [].constructor(16); let i = index"
       class="text-center flex items-center justify-center sticky top-0 text-sm"
       [ngClass]="[
-        i + 1 > 6 ? 'text-gray-200' : 'text-gray-700',
+        calendarBackgroundClass(i + 1) + '-content',
         calendarBackgroundClass(i + 1)
       ]"
     >
@@ -46,7 +46,7 @@
       <div
         class="text-xs text-center px-1 py-3 flex flex-col items-center justify-center border-b border-gray-300"
         [ngClass]="{
-          'bg-base-200': [6, 0].includes(getDayFromDate(date)),
+          'bg-base-300': [6, 0].includes(getDayFromDate(date)),
         }"
         style="grid-column: 1 / 3"
       >
@@ -60,7 +60,7 @@
       <div
         class="border-b border-gray-300 py-2 gap-2 items-center"
         [ngClass]="{
-          'bg-base-200': [6, 0].includes(getDayFromDate(date)),
+          'bg-base-300': [6, 0].includes(getDayFromDate(date)),
         }"
         style="
           grid-column: 3 / 19;
@@ -78,14 +78,14 @@
               'grid-column': subject.start + ' / ' + (subject.end + 1),
             }"
           >
-            <div
-              class="bg-primary rounded-box py-2 px-3 text-gray-800 text-xs"
+            <label
+              class="block bg-primary text-primary-content py-2 px-3 text-xs"
               [ngClass]="{
-                '!bg-error text-neutral-content': rowIndex > 0
+                '!bg-error text-error-content': rowIndex > 0
               }"
             >
               {{ subject.defaultName }}
-            </div>
+            </label>
           </div>
         </ng-template>
       </div>

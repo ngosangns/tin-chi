@@ -1,13 +1,15 @@
 import { CommonModule } from '@angular/common';
-import { Component, Input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 import { CalendarData, CalendarTableContent } from '../../../types/calendar';
 
 @Component({
   selector: 'app-calendar',
+  standalone: true,
   imports: [CommonModule],
   templateUrl: './calendar.component.html',
   styleUrl: './calendar.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CalendarComponent {
   @Input('calendar$') calendar$: BehaviorSubject<CalendarData | undefined>;
@@ -47,11 +49,11 @@ export class CalendarComponent {
   calendarBackgroundClass(session: number): string {
     switch (this.checkSession(session)) {
       case 'afternoon':
-        return 'bg-yellow-700';
+        return 'bg-secondary';
       case 'evening':
-        return 'bg-gray-700';
+        return 'bg-neutral';
       default:
-        return 'bg-yellow-200';
+        return 'bg-accent';
     }
   }
 
