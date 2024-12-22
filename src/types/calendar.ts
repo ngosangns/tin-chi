@@ -94,4 +94,4 @@ export type AutoMode =
   | 'refer-non-overlap-afternoon'
   | 'refer-non-overlap-evening';
 
-export type ClassCombination = CalendarGroupByClassDetail[];
+export type ClassCombination = CalendarGroupByClassDetail[]; // tận dụng con trỏ đến object CalendarGroupByClassDetail để tiết kiệm bộ nhớ

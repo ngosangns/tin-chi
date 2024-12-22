@@ -1,44 +1,42 @@
 import {
   CalendarGroupByClassDetail,
-  CalendarGroupBySubjectName,
+  CalendarTableContent,
   ClassCombination,
 } from '../types/calendar';
 import { countSpecificDayOfWeek } from './date';
 
-/**
- * Tạo ra các tổ hợp từ các môn học đã chọn.
- *
- * @param selectedSubjects - Đối tượng chứa các môn học đã chọn, được nhóm theo tên môn học.
- * @returns Một mảng các tổ hợp, mỗi tổ hợp là một mảng chứa các chi tiết lớp học.
- *
- */
-export function generateCombinations(
-  selectedSubjects: CalendarGroupBySubjectName
-): ClassCombination[] {
-  const subjectKeys = Object.keys(selectedSubjects);
-  const combinations: ClassCombination[] = [];
-  const currentCombination: ClassCombination = [];
+function calculateConflictsOptimized(
+  combination: CalendarGroupByClassDetail[]
+): number {
+  const timeGrid: Map<number, Map<number, string[]>> = new Map(); // { dayOfWeek -> { period -> classIds[] } }
+  let conflicts = 0;
 
-  function backtrack(index: number) {
-    if (index === subjectKeys.length) {
-      combinations.push([...currentCombination]);
-      return;
-    }
+  for (const cls of combination) {
+    for (const schedule of cls.details) {
+      const day = schedule.dayOfWeek;
 
-    const subjectKey = subjectKeys[index];
-    const subjectData = selectedSubjects[subjectKey];
-    if (!subjectData) return;
+      if (!timeGrid.has(day)) timeGrid.set(day, new Map());
+      const periods = timeGrid.get(day)!;
 
-    const classKeys = Object.keys(subjectData.classes);
-    for (const classKey of classKeys) {
-      currentCombination.push(subjectData.classes[classKey]);
-      backtrack(index + 1);
-      currentCombination.pop();
+      // Đánh dấu các tiết học
+      for (
+        let period = schedule.startSession;
+        period <= schedule.endSession;
+        period++
+      ) {
+        if (!periods.has(period)) periods.set(period, []);
+
+        const classesAtPeriod = periods.get(period)!;
+        if (classesAtPeriod.length > 0) {
+          // Nếu đã có lớp trong thời gian này, tăng số lượng xung đột
+          conflicts += classesAtPeriod.length;
+        }
+        classesAtPeriod.push(cls.subjectClassCode);
+      }
     }
   }
 
-  backtrack(0);
-  return combinations;
+  return conflicts;
 }
 
 /**
@@ -47,18 +45,6 @@ export function generateCombinations(
  * @param {CalendarGroupByClassDetail[]} combination - Mảng các chi tiết lớp học được nhóm lại.
  * @returns {number} - Số lượng tiết học bị trùng lặp.
  *
- * Hàm này duyệt qua tất cả các cặp lớp học trong mảng `combination` và kiểm tra xem có tiết học nào bị trùng lặp hay không.
- * Nếu có, nó sẽ tính toán số lượng tiết học bị trùng lặp và cộng dồn vào biến `overlap`.
- *
- * Các điều kiện để xác định tiết học bị trùng lặp bao gồm:
- * - Ngày bắt đầu của tiết học 1 phải nhỏ hơn hoặc bằng ngày kết thúc của tiết học 2.
- * - Ngày kết thúc của tiết học 1 phải lớn hơn hoặc bằng ngày bắt đầu của tiết học 2.
- * - Tiết bắt đầu của tiết học 1 phải nhỏ hơn hoặc bằng tiết kết thúc của tiết học 2.
- * - Tiết kết thúc của tiết học 1 phải lớn hơn hoặc bằng tiết bắt đầu của tiết học 2.
- * - Ngày trong tuần của hai tiết học phải giống nhau.
- *
- * Nếu các điều kiện trên đều thỏa mãn, hàm sẽ tính toán số lượng ngày bị trùng lặp và số lượng tiết học bị trùng lặp trong các ngày đó.
- * Kết quả cuối cùng là tổng số tiết học bị trùng lặp giữa tất cả các lớp học trong nhóm.
  */
 export function calculateOverlap(
   combination: CalendarGroupByClassDetail[],
@@ -67,82 +53,199 @@ export function calculateOverlap(
   }
 ): number {
   let overlap = 0;
-
+  const aDateInMiliseconds = 24 * 60 * 60 * 1000;
   const cacheKeyPrefix = 'overlap';
-  const combinationCacheKey = [
-    cacheKeyPrefix,
-    ...combination.map((cd) =>
-      [cd.majors[0], cd.subjectName, cd.subjectClassCode].join('-')
-    ),
-  ].join('|');
+  const timeGrid = new Map<number, Map<number, number>>(); // { date -> { period -> totalClasses } }
 
-  if (cache && cache.hasOwnProperty(combinationCacheKey))
-    return cache[combinationCacheKey];
+  // Lặp qua từng lớp
+  for (let classIndex = 0; classIndex < combination.length; classIndex++) {
+    const cls = combination[classIndex];
+    const cacheKey = [
+      cacheKeyPrefix,
+      combination
+        .slice(0, classIndex + 1)
+        .map((c) => [c.majors[0], c.subjectName, c.subjectClassCode].join('-')),
+    ].join('|');
 
-  for (let i = 0; i < combination.length; i++)
-    for (let j = i + 1; j < combination.length; j++) {
-      const classDetail1 = combination[i];
-      const classDetail2 = combination[j];
+    // Kiểm tra nếu có cache thì lấy
+    if (cache && cache.hasOwnProperty(cacheKey)) {
+      overlap += cache[cacheKey];
+      continue;
+    }
 
-      const pairCacheKey = [
-        cacheKeyPrefix,
-        [
-          classDetail1.majors[0],
-          classDetail1.subjectName,
-          classDetail1.subjectClassCode,
-        ].join('-'),
-        [
-          classDetail2.majors[0],
-          classDetail2.subjectName,
-          classDetail2.subjectClassCode,
-        ].join('-'),
-      ].join('|');
+    // Lặp qua từng lịch học của lớp
+    for (const schedule of cls.details) {
+      // Lặp qua từng ngày trong lịch học
+      for (
+        let curDate = schedule.startDate;
+        curDate <= schedule.endDate;
+        curDate += aDateInMiliseconds
+      ) {
+        if (new Date(curDate).getDay() !== schedule.dayOfWeek) continue; // Nếu ngày hiện tại không nằm trong lịch học, bỏ qua
+        if (!timeGrid.has(curDate)) timeGrid.set(curDate, new Map());
+        const curDateTimeGrid = timeGrid.get(curDate)!;
 
-      if (cache && cache.hasOwnProperty(pairCacheKey)) {
-        overlap += cache[pairCacheKey];
-      } else {
-        let classPairTotalOverlap = 0;
-        for (let session1 of classDetail1.details)
-          for (let session2 of classDetail2.details)
-            if (
-              session1.startDate <= session2.endDate &&
-              session1.endDate >= session2.startDate &&
-              session1.startSession <= session2.endSession &&
-              session1.endSession >= session2.startSession &&
-              session1.dayOfWeek === session2.dayOfWeek
-            ) {
-              const conflictStartDate = Math.max(
-                session1.startDate,
-                session2.startDate
-              ); // Ngày bắt đầu trùng
-              const conflictEndDate = Math.min(
-                session1.endDate,
-                session2.endDate
-              ); // Ngày kết thúc trùng
-
-              const conflictStartSession = Math.max(
-                session1.startSession,
-                session2.startSession
-              ); // Tiết bắt đầu trùng
-              const conflictEndSession = Math.min(
-                session1.endSession,
-                session2.endSession
-              ); // Tiết kết thúc trùng
-
-              classPairTotalOverlap +=
-                countSpecificDayOfWeek(
-                  conflictStartDate,
-                  conflictEndDate,
-                  session1.dayOfWeek
-                ) *
-                (conflictEndSession - conflictStartSession + 1);
-            }
-        cache && (cache[pairCacheKey] = classPairTotalOverlap);
-        overlap += classPairTotalOverlap;
+        // Lặp qua từng tiết học trong lịch học
+        for (
+          let period = schedule.startSession;
+          period <= schedule.endSession;
+          period++
+        ) {
+          const classesAtPeriod = (curDateTimeGrid!.get(period) || 0) + 1;
+          curDateTimeGrid.set(period, classesAtPeriod);
+          if (classesAtPeriod > 1) overlap++;
+        }
       }
     }
 
-  cache && (cache[combinationCacheKey] = overlap);
+    // Lưu cache
+    if (cache) cache[cacheKey] = overlap;
+  }
+
+  return overlap;
+}
+
+export function calculateOverlapWithBitmask(
+  combination: CalendarGroupByClassDetail[],
+  cache?: {
+    [key: string]: number;
+  }
+): number {
+  let overlap = 0;
+  const aDayInMiliseconds = 24 * 60 * 60 * 1000;
+  const cacheKeyPrefix = 'overlap';
+  const timeGrid = new Map<number, number>(); // { date -> session list in bitmask }
+  const maxSession = 16; // Giả định ta có 16 tiết học trong một ngày
+
+  // Lặp qua từng lớp
+  for (let classIndex = 0; classIndex < combination.length; classIndex++) {
+    const cls = combination[classIndex];
+    const cacheKey = [
+      cacheKeyPrefix,
+      combination
+        .slice(0, classIndex + 1)
+        .map((c) => [c.majors[0], c.subjectName, c.subjectClassCode].join('-')),
+    ].join('|'); // Tạo cache key, dùng để lưu số lượng tiết học bị trùng lặp của tổ hợp lớp từ đầu đến lớp hiện tại
+
+    // Kiểm tra nếu có cache thì lấy
+    if (cache && cache.hasOwnProperty(cacheKey)) {
+      overlap += cache[cacheKey];
+      continue;
+    }
+
+    // Lặp qua từng lịch học của lớp
+    for (const schedule of cls.details) {
+      let isFoundDayOfWeek = false; // Đánh dấu xem đã tìm thấy ngày trong lịch học chưa
+      // Lặp qua từng ngày trong lịch học
+      for (
+        let curDate = schedule.startDate;
+        curDate <= schedule.endDate;
+        curDate += isFoundDayOfWeek ? aDayInMiliseconds * 7 : aDayInMiliseconds // Nếu đã tìm thấy ngày trong lịch học, thì nhảy 7 ngày thay vì 1 ngày
+      ) {
+        if(!isFoundDayOfWeek) {
+          if (new Date(curDate).getDay() !== schedule.dayOfWeek) continue; // Nếu ngày hiện tại không nằm trong lịch học, bỏ qua
+          else isFoundDayOfWeek = true; // Đánh dấu đã tìm thấy ngày trong lịch học
+        }
+
+        const curDateBitmask = timeGrid.get(curDate) || 0; // Lấy lịch bitmask của ngày hiện tại
+
+        const curClassBitmask =
+          ((1 << (schedule.endSession - schedule.startSession + 1)) - 1) <<
+          (maxSession - schedule.endSession); // Tạo lịch bitmask của lớp trong ngày hiện tại
+
+        timeGrid.set(curDate, curDateBitmask | curClassBitmask); // Gộp lịch bitmask của lớp vào lịch bitmask của ngày hiện tại
+
+        // Đến số lượng tiết bị trùng (dùng cache nếu có)
+        const totalOverlapSessions = (() => {
+          let overlapBitmask = curClassBitmask & curDateBitmask; // Tạo lịch bitmask của các tiết bị trùng
+          if (overlapBitmask === 0) return 0; // Nếu không có tiết bị trùng thì trả về 0
+
+          // Kiểm tra nếu có cache thì lấy
+          const cacheKey = 'tb1|' + overlapBitmask;
+          if (cache && cache[cacheKey]) return cache[cacheKey];
+
+          // Đếm số bit "1" trong overlapBitmask (tương ứng với số tiết bị trùng)
+          let count = 0;
+          while (overlapBitmask > 0) {
+            count += overlapBitmask & 1;
+            overlapBitmask >>= 1;
+          }
+
+          // Lưu cache
+          cache && (cache[cacheKey] = count);
+
+          return count;
+        })();
+
+        overlap += totalOverlapSessions;
+      }
+    }
+
+    // Lưu cache
+    if (cache) cache[cacheKey] = overlap;
+  }
+
+  return overlap;
+}
+
+
+export function calculateOverlapWithBitmask2(
+  combination: ClassCombination,
+  minDate: number,
+  maxDate: number,
+  totalSession: number,
+): number {
+  let overlap = 0;
+  const aDayInMiliseconds = 24 * 60 * 60 * 1000;
+  const totalDate = (maxDate - minDate) / aDayInMiliseconds + 1;
+  const timeGrid = Array(totalDate).fill(0)
+
+  const getDateIndex = (date: number) => (date - minDate) / aDayInMiliseconds;
+
+  // Lặp qua từng lớp
+  for (let classIndex = 0; classIndex < combination.length; classIndex++) {
+    const classData = combination[classIndex];
+    for(let scheduleIndex = 0; scheduleIndex < classData.details.length; scheduleIndex++) {
+      let isFoundDayOfWeek = false; // Đánh dấu xem đã tìm thấy ngày trong lịch học chưa
+
+      const scheduleData = classData.details[scheduleIndex];
+
+      // Lặp qua từng ngày trong lịch học
+      for (
+        let curDate = scheduleData.startDate;
+        curDate <= scheduleData.endDate;
+        curDate += isFoundDayOfWeek ? aDayInMiliseconds * 7 : aDayInMiliseconds // Nếu đã tìm thấy ngày trong lịch học, thì nhảy 7 ngày thay vì 1 ngày
+      ) {
+        if(!isFoundDayOfWeek) {
+          const curDayOfWeek = (Math.floor(curDate / 86400) + 4) % 7
+          if (curDayOfWeek !== scheduleData.dayOfWeek) continue; // Nếu ngày hiện tại không nằm trong lịch học, bỏ qua
+          else isFoundDayOfWeek = true; // Đánh dấu đã tìm thấy ngày trong lịch học
+        }
+
+        const curDateBitmask = timeGrid[getDateIndex(curDate)]; // Lấy lịch bitmask của ngày hiện tại
+        const curClassBitmask = ((1 << (scheduleData.endSession - scheduleData.startSession + 1)) - 1) << (totalSession - scheduleData.endSession); // Tạo lịch bitmask của lớp trong ngày hiện tại
+
+        timeGrid[getDateIndex(curDate)] = curDateBitmask | curClassBitmask // Gộp lịch bitmask của lớp vào lịch bitmask của ngày hiện tại
+
+        // Đến số lượng tiết bị trùng (dùng cache nếu có)
+        const totalOverlapSessions = (() => {
+          let overlapBitmask = curClassBitmask & curDateBitmask; // Tạo lịch bitmask của các tiết bị trùng
+          if (overlapBitmask === 0) return 0; // Nếu không có tiết bị trùng thì trả về 0
+
+          // Đếm số bit "1" trong overlapBitmask (tương ứng với số tiết bị trùng)
+          let count = 0;
+          while (overlapBitmask > 0) {
+            count += overlapBitmask & 1;
+            overlapBitmask >>= 1;
+          }
+
+          return count;
+        })();
+
+        overlap += totalOverlapSessions;
+      }
+    }
+  }
 
   return overlap;
 }

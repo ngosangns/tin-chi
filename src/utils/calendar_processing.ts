@@ -101,10 +101,10 @@ export function processCalendar(rawData: Array<RawCalendar>): CalendarData {
     // Chuyển đổi ngày bắt đầu và kết thúc thành timestamp
     const startDate = v[2]
       ? Date.parse('20' + v[2].split('/').reverse().join('-'))
-      : 0;
+      : 0; // Ví dụ: 20/10/21 -> 2021-10-20
     const endDate = v[3]
       ? Date.parse('20' + v[3].split('/').reverse().join('-'))
-      : 0;
+      : 0; // Ví dụ: 20/10/21 -> 2021-10-20
 
     // Tách buổi học bắt đầu và kết thúc
     const match2 = v[4].split('->');

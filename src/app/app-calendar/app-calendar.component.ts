@@ -1,9 +1,5 @@
 import { AsyncPipe, CommonModule } from '@angular/common';
-import {
-  ChangeDetectionStrategy,
-  ChangeDetectorRef,
-  Component,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { BehaviorSubject, Subscription } from 'rxjs';
 import { EXCEL_PATH, JSON_PATH, SESSIONS } from '../../constants/calendar';
@@ -16,6 +12,7 @@ import {
   CalendarTableContent,
   CalendarTableContentInDate,
   CalendarTableContentInSession,
+  ClassCombination,
   RawCalendar,
 } from '../../types/calendar';
 import { processCalendar } from '../../utils/calendar_processing';
@@ -60,11 +57,9 @@ export class AppCalendarComponent {
   calendarGroupByMajor: [string, CalendarGroupByMajorDetail][] = [];
   calendarGroupByMajorSub: Subscription;
 
-  private readonly calendarWorker = new Worker(
-    new URL('../../workers/calendar.worker', import.meta.url)
-  );
+  private readonly calendarWorker: Worker;
 
-  constructor(private cdr: ChangeDetectorRef) {
+  constructor() {
     this.loading$ = new BehaviorSubject<boolean>(true);
     this.calendar$ = new BehaviorSubject<CalendarData | undefined>(undefined);
     this.calendarTableContent$ = new BehaviorSubject<any>({});
@@ -75,34 +70,9 @@ export class AppCalendarComponent {
       ).sort((a, b) => a[0].localeCompare(b[0]));
     });
 
-    this.calendarWorker.onmessage = (res: {
-      data: {
-        updatedCalendarTableContent: CalendarTableContent;
-        updatedCalendarGroupByMajor: CalendarGroupByMajor;
-        isConflict: boolean;
-      };
-    }) => {
-      if (res.data) {
-        // Cập nhật dữ liệu lịch học sau khi xử lý
-        this.calendarTableContent$.next(res.data.updatedCalendarTableContent);
-        const calendar = this.calendar$.value;
-        if (calendar) {
-          calendar.calendarGroupByMajor = res.data.updatedCalendarGroupByMajor;
-          this.calendar$.next(calendar);
-        }
-        this.isConflict = res.data.isConflict;
-      } else {
-        console.error('No data received from worker!');
-        alert('Có lỗi xảy ra, không thể cập nhật dữ liệu!');
-      }
-
-      this.loading$.next(false);
-    };
-    this.calendarWorker.onerror = (err: any) => {
-      console.error(err);
-      alert('Có lỗi xảy ra, không thể cập nhật dữ liệu!');
-      this.loading$.next(false);
-    };
+    this.calendarWorker = new Worker(
+      new URL('../../workers/calendar.worker', import.meta.url)
+    );
   }
 
   ngOnInit(): void {
@@ -155,6 +125,7 @@ export class AppCalendarComponent {
     this.oldAuto = auto;
 
     this.calendarWorker.postMessage({
+      type: 'calculateCalendarTableContent',
       data: {
         calendarTableContent: this.calendarTableContent$.value,
         calendar: this.calendar$.value,
@@ -163,6 +134,56 @@ export class AppCalendarComponent {
         autoTh: this.autoTh,
       },
     });
+
+    try {
+      await new Promise((resolve) => {
+        this.calendarWorker.onmessage = async (res: {
+          data: {
+            type: string;
+            data: any;
+          };
+        }) => {
+          switch (res.data.type) {
+            case 'calculateCalendarTableContent': {
+              const data: {
+                updatedCalendarTableContent: CalendarTableContent;
+                updatedCalendarGroupByMajor: CalendarGroupByMajor;
+                isConflict: boolean;
+              } = res.data.data;
+
+              if (data) {
+                // Cập nhật dữ liệu lịch học sau khi xử lý
+                this.calendarTableContent$.next(
+                  data.updatedCalendarTableContent
+                );
+                const calendar = this.calendar$.value;
+                if (calendar) {
+                  calendar.calendarGroupByMajor =
+                    data.updatedCalendarGroupByMajor;
+                  this.calendar$.next(calendar);
+                }
+                this.isConflict = data.isConflict;
+              } else throw new Error('No data received from worker!');
+
+              resolve({});
+              break;
+            }
+          }
+        };
+        this.calendarWorker.onerror = (err: any) => {
+          throw err;
+        };
+      });
+    } catch (e: any) {
+      console.error(e);
+      alert('Có lỗi xảy ra, không thể cập nhật dữ liệu!');
+    } finally {
+      this.calendarWorker.onmessage = null;
+      this.calendarWorker.onmessageerror = null;
+      this.calendarWorker.onerror = null;
+
+      this.loading$.next(false);
+    }
   }
 
   totalDisplayOnCalendarClass(): number {
