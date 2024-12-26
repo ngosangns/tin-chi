@@ -1,4 +1,12 @@
 import {
+  END_AFTERNOON_SESSION,
+  END_EVENING_SESSION,
+  END_MORNING_SESSION,
+  START_AFTERNOON_SESSION,
+  START_EVENING_SESSION,
+  START_MORNING_SESSION,
+} from '../constants/calendar';
+import {
   AutoMode,
   CalendarData,
   CalendarGroupByClassDetail,
@@ -8,7 +16,10 @@ import {
   CalendarTableContent,
   ClassCombination,
 } from '../types/calendar';
-import { calculateOverlapWithBitmask2 } from '../utils/calendar_overlap';
+import {
+  calculateOverlapBetween2Classes,
+  calculateOverlapWithBitmask2,
+} from '../utils/calendar_overlap';
 
 function workerCalculateCalendarTableContent(
   calendarTableContent: CalendarTableContent,
@@ -131,154 +142,152 @@ export async function workerAutoCalculateCalendarTableContent(
   const selectedSubjectsLength = selectedSubjectsKeys.length;
 
   const aDayInMiliseconds = 24 * 60 * 60 * 1000;
-  const getDateIndex = (date: number) =>
-    (date - dateList[0]) / aDayInMiliseconds;
+  // const getDateIndex = (date: number) =>
+  //   (date - dateList[0]) / aDayInMiliseconds;
 
-  const classes: CalendarGroupByClassDetail[][] = []; // Danh sách các lớp
-  const timeGrid: number[][][] = []; // Lịch học của tất cả các lớp
-  const totalSessionsInSessionRange: [number, number, number][][] = []; // Tổng số tiết học trong mỗi buổi của tất cả các lớp
+  // n = số môn
+  // m = số lớp của mỗi môn
+  // p = số lịch của mỗi lớp
+  const classes: CalendarGroupByClassDetail[][] = []; // Danh sách các lớp của các môn: n * m
+  const timeGrid: [number, number, number, number][][][] = []; // Lịch học của các lớp của các môn: n * m * p * [startDate, endDate, dayOfWeek, sessionBitmask]
+  const totalSessionsInSessionRange: number[][] = []; // Tổng số tiết học trong buổi auto của các lớp của các môn: n * m
+
+  const autoData = [
+    ['refer-non-overlap-morning', START_MORNING_SESSION, END_MORNING_SESSION],
+    [
+      'refer-non-overlap-afternoon',
+      START_AFTERNOON_SESSION,
+      END_AFTERNOON_SESSION,
+    ],
+    ['refer-non-overlap-evening', START_EVENING_SESSION, END_EVENING_SESSION],
+  ].find((item) => item[0] === auto) as [string, number, number];
 
   selectedSubjectsKeys.forEach((subjectKey) => {
     const subjectData = selectedSubjects[subjectKey];
-
     const subjectClasses: CalendarGroupByClassDetail[] = []; // Danh sách các lớp
-    const subjectTimeGrid: number[][] = []; // Lịch học của tất cả các lớp
-    const subjectTotalSessionsInSessionRange: [number, number, number][] = []; // Tổng số tiết học trong mỗi buổi của tất cả các lớp
+    const subjectTimeGrid: [number, number, number, number][][] = []; // Lịch học của tất cả các lớp: m * p * [startDate, endDate, dayOfWeek, sessionBitmask]
+    const subjectTotalSessionsInSessionRange: number[] = []; // Tổng số tiết học trong buổi auto của tất cả các lớp: m
 
     Object.keys(subjectData.classes).forEach((classKey) => {
       const classData = subjectData.classes[classKey];
-      const classScheduleGrid = new Array(dateList.length).fill(0);
 
-      let totalMorningSessions = 0;
-      let totalAfternoonSessions = 0;
-      let totalEveningSessions = 0;
+      let totalAutoSessions = 0;
 
-      classData.details.forEach((detail) => {
-        const startDateIndex = getDateIndex(detail.startDate);
-        const endDateIndex = getDateIndex(detail.endDate);
+      const classScheduleGrid: [number, number, number, number][] = new Array(
+        classData.details.length
+      ).fill([0, 0, 0, 0]); // Lịch học của lớp: m * [startDate, endDate, dayOfWeek, sessionBitmask]
 
-        for (let i = startDateIndex; i <= endDateIndex; i++) {
-          classScheduleGrid[i] =
-            ((1 << (detail.endSession - detail.startSession + 1)) - 1) <<
-            (sessions.length - detail.endSession); // Tạo lịch bitmask của lớp trong lịch hiện tại
+      classData.details.forEach((detail, i) => {
+        // Lấy ra số tuần giữa ngày bắt đầu và ngày kết thúc
+        const totalWeeks =
+          (detail.endDate - detail.startDate + aDayInMiliseconds) /
+          (aDayInMiliseconds * 7);
 
-          // Lấy ra số tuần giữa ngày bắt đầu và ngày kết thúc
-          const totalWeek =
-            (detail.endDate - detail.startDate + aDayInMiliseconds) /
-            (aDayInMiliseconds * 7);
+        classScheduleGrid[i][0] = detail.startDate;
+        classScheduleGrid[i][1] = detail.endDate;
+        classScheduleGrid[i][2] = detail.dayOfWeek;
+        classScheduleGrid[i][3] =
+          ((1 << (detail.endSession - detail.startSession + 1)) - 1) <<
+          (sessions.length - detail.endSession); // Tạo lịch bitmask của lớp trong lịch hiện tại
 
-          // Tính số tiết học trong buổi sáng
-          if (detail.startSession <= 6)
-            totalMorningSessions +=
-              (Math.min(6, detail.endSession) - detail.startSession + 1) *
-              totalWeek;
-
-          // Tính số tiết học trong buổi chiều
-          if (detail.startSession <= 12 && detail.endSession >= 7)
-            totalAfternoonSessions +=
-              (Math.min(12, detail.endSession) -
-                Math.max(7, detail.startSession) +
-                1) *
-              totalWeek;
-
-          // Tính số tiết học trong buổi tối
-          if (detail.endSession >= 13)
-            totalEveningSessions +=
-              (detail.endSession - Math.max(13, detail.startSession) + 1) *
-              totalWeek;
-        }
+        // Tính số tiết học trong buổi
+        if (
+          autoData &&
+          detail.startSession <= autoData[2] &&
+          detail.endSession >= autoData[1]
+        )
+          totalAutoSessions +=
+            (Math.min(autoData[2], detail.endSession) -
+              Math.max(autoData[1], detail.startSession) +
+              1) *
+            totalWeeks;
       });
 
       subjectTimeGrid.push(classScheduleGrid); // Thêm lịch học của lớp vào lịch môn
       subjectClasses.push(classData); // Thêm lớp vào danh sách các lớp của môn
-      subjectTotalSessionsInSessionRange.push([
-        totalMorningSessions,
-        totalAfternoonSessions,
-        totalEveningSessions,
-      ]); // Thêm tổng số tiết học trong mỗi buổi của lớp trong môn học
+      subjectTotalSessionsInSessionRange.push(totalAutoSessions); // Thêm tổng số tiết học trong mỗi buổi của lớp trong môn học
     });
 
-    timeGrid.push(subjectTimeGrid); // Thêm lịch học của môn học vào lịch
     classes.push(subjectClasses); // Thêm danh sách các lớp của môn học vào danh sách các lớp
+    timeGrid.push(subjectTimeGrid); // Thêm lịch học của môn học vào lịch
     totalSessionsInSessionRange.push(subjectTotalSessionsInSessionRange); // Thêm tổng số tiết học trong mỗi buổi của các lớp trong môn học
   });
 
-  const combinations: ClassCombination[] = [];
+  const combinations: number[][] = []; // Danh sách các tổ hợp: Số lượng tổ hợp * (n + 1)
+  const threshold = 12; // số tiết học có thể trùng tối đa trong 1 tổ hợp
 
   // Hàm tạo tổ hợp
-  function generateCombination(current: ClassCombination, index: number) {
+  function generateCombination(
+    current: number[],
+    index: number,
+    overlap: number
+  ) {
+    // Nếu đã chọn hết tất cả các môn thì thêm tổ hợp này vào danh sách tổ hợp
     if (index === selectedSubjectsLength) {
-      combinations.push([...current]);
+      combinations.push([overlap, ...current]);
       return;
     }
 
-    const subjectData = selectedSubjects[selectedSubjectsKeys[index]];
-    const classKeys = Object.keys(subjectData.classes);
+    const classesData = classes[index]; // Lấy danh sách các lớp của môn học hiện tại
+    for (let i = 0; i < classesData.length; i++) {
+      const currentClassTimeGrid = timeGrid[index][i]; // Lấy lịch học của lớp hiện tại
 
-    for (const classKey of classKeys) {
-      current.push(subjectData.classes[classKey]);
-      generateCombination(current, index + 1);
-      current.pop();
+      // Tính số tiết học bị trùng trong trường hợp thêm lớp này vào tổ hợp
+      let newOverlap = overlap;
+      for (let j = 0; j < index; j++) {
+        newOverlap += calculateOverlapBetween2Classes(
+          timeGrid[j][current[j]],
+          currentClassTimeGrid
+        );
+
+        // Nếu số tiết học bị trùng vượt quá ngưỡng thì bỏ qua tổ hợp này
+        if (newOverlap > threshold) break;
+      }
+
+      // Nếu số tiết học bị trùng vượt quá ngưỡng thì bỏ qua tổ hợp này
+      if (newOverlap > threshold) continue;
+
+      current[index] = i; // Lưu lớp được chọn
+      generateCombination(current, index + 1, newOverlap); // Tìm tổ hợp cho môn tiếp theo
     }
   }
 
   const start = performance.now();
 
-  generateCombination([], 0);
+  generateCombination(new Array(selectedSubjectsLength).fill(0), 0, 0); // Phần tử đầu tiên trong mảng là tổng số tiết học bị trùng
 
-  // const combinations = generateCombinations(selectedSubjects);
-  console.log('Generate combinations:', performance.now() - start);
+  console.log('Generate combinations time:', performance.now() - start);
   console.log('Total combinations:', combinations.length);
 
-  const start2 = performance.now();
+  // Lưu ý: khi truy cập mảng bestCombination đều phải cộng 1 vào index
+  //        do phần tử đầu tiên là tổng số tiết học bị trùng
 
-  const combinationsWithOverlap: {
-    overlap: number;
-    totalSessionsInSessionRangeOfCombination: number;
-    combination: ClassCombination;
-  }[] = [];
-  for (const combination of combinations) {
-    combinationsWithOverlap.push({
-      overlap: calculateOverlapWithBitmask2(
-        combination,
-        dateList[0],
-        dateList[dateList.length - 1],
-        sessions.length
-      ),
-      totalSessionsInSessionRangeOfCombination: 0,
-      combination,
-    });
-  }
+  // Tìm tổ hợp tối ưu nhất dựa trên số tiết học bị trùng
+  const combinationsWithOverlapSorted = combinations.sort((a, b) => {
+    const diff = a[0] - b[0];
+    if (diff !== 0 || !auto) return diff;
 
-  console.log('Calculate overlap:', performance.now() - start2);
-
-  const combinationsWithOverlapSorted = combinationsWithOverlap!.sort(
-    (a, b) => {
-      const diff = a.overlap - b.overlap;
-      if (diff === 0)
-        return -(
-          a.totalSessionsInSessionRangeOfCombination -
-          b.totalSessionsInSessionRangeOfCombination
-        );
-      return diff;
-    }
-  );
-
+    return (
+      b
+        .slice(1)
+        .reduce((acc, cur, i) => acc + totalSessionsInSessionRange[i][cur], 0) -
+      a
+        .slice(1)
+        .reduce((acc, cur, i) => acc + totalSessionsInSessionRange[i][cur], 0)
+    );
+  });
   const bestCombination = combinationsWithOverlapSorted.length
     ? combinationsWithOverlapSorted[
         autoTh % combinationsWithOverlapSorted.length
       ]
     : undefined;
 
-  const start3 = performance.now();
-
   const updatedCalendarGroupByMajor = bestCombination
     ? (() => {
         const clonedCalendarGroupByMajor =
           structuredClone(calendarGroupByMajor);
-        for (const cls of bestCombination.combination) {
-          const classData =
-            selectedSubjects[cls.subjectName].classes[cls.subjectClassCode];
+        for (let i = 0; i < selectedSubjectsLength; i++) {
+          const classData = classes[i][bestCombination[i + 1]];
           for (const major of classData.majors) {
             const majorData = clonedCalendarGroupByMajor[major];
             const subjectData = majorData.subjects[classData.subjectName];
@@ -297,12 +306,10 @@ export async function workerAutoCalculateCalendarTableContent(
       ).updatedCalendarTableContent
     : calendarTableContent;
 
-  console.log('Update calendar:', performance.now() - start3);
-
   return {
     updatedCalendarTableContent,
     updatedCalendarGroupByMajor,
-    isConflict: bestCombination ? bestCombination.overlap > 0 : false,
+    isConflict: bestCombination ? bestCombination[0] > 0 : false,
   };
 }
 

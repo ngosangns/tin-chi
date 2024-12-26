@@ -324,3 +324,35 @@ export function calculateTotalSessionsInSessionRange(
 
   return result;
 }
+
+
+// Hàm đếm bit 1 trong một số nguyên
+export function countBit1(n: number): number {
+  let count = 0;
+  let m = n;
+  while (m > 0) {
+    count += m & 1;
+    m >>= 1;
+  }
+  return count;
+}
+
+// Hàm tính overlap giữa 2 lớp
+export function calculateOverlapBetween2Classes(
+  c1: [number, number, number, number][], // [startDate, endDate, dayOfWeek, sessionBitmask][]
+  c2: [number, number, number, number][]
+): number {
+  let overlap = 0;
+
+  for (let i = 0; i < c1.length; i++)
+    for (let j = 0; j < c2.length; j++)
+      // Kiểm tra nếu khoảng thời gian của hai lớp có giao nhau và cùng ngày học trong tuần
+      if (c1[i][0] <= c2[j][1] && c1[i][1] >= c2[j][0] && c1[i][2] === c2[j][2]) {
+        // Tính toán overlap bằng cách sử dụng bitmask
+        const _overlap = c1[i][3] & c2[j][3];
+        // Nếu có overlap, đếm số bit 1 trong bitmask và cộng vào tổng overlap
+        if (_overlap > 0) overlap += countBit1(_overlap);
+      }
+
+  return overlap;
+}
