@@ -12,7 +12,6 @@ import {
   CalendarTableContent,
   CalendarTableContentInDate,
   CalendarTableContentInSession,
-  ClassCombination,
   RawCalendar,
 } from '../../types/calendar';
 import { processCalendar } from '../../utils/calendar_processing';
@@ -148,7 +147,7 @@ export class AppCalendarComponent {
               const data: {
                 updatedCalendarTableContent: CalendarTableContent;
                 updatedCalendarGroupByMajor: CalendarGroupByMajor;
-                isConflict: boolean;
+                totalSessionsConflicted: number;
               } = res.data.data;
 
               if (data) {
@@ -162,7 +161,7 @@ export class AppCalendarComponent {
                     data.updatedCalendarGroupByMajor;
                   this.calendar$.next(calendar);
                 }
-                this.isConflict = data.isConflict;
+                this.isConflict = data.totalSessionsConflicted > 0;
               } else throw new Error('No data received from worker!');
 
               resolve({});
