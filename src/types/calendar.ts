@@ -1,14 +1,13 @@
-export type CalendarTableContent = {
-  [date: string]: CalendarTableContentInDate;
-};
+export type CalendarTableContent = Record<number, CalendarTableContentInDate>; // key: date
 
-export type CalendarTableContentInDate = {
-  [session: number]: CalendarTableContentInSession;
-};
+export type CalendarTableContentInDate = Record<
+  number,
+  CalendarTableContentInSession
+>; // key: session
 
 export type CalendarTableContentInSession = { defaultName: string }[];
 
-export type RawCalendar = [string, number, string, string, string];
+export type RawCalendar = [string, number, string, string, string]; // [defaultName, dayOfWeek, startDate, endDate, session]
 
 /**
  * @typedef CalendarData
@@ -42,9 +41,7 @@ export type Calendar = {
   endSession: number;
 };
 
-export type CalendarGroupByMajor = {
-  [major: string]: CalendarGroupByMajorDetail;
-};
+export type CalendarGroupByMajor = Record<string, CalendarGroupByMajorDetail>; // key: major
 
 export type CalendarGroupByMajorDetail = {
   major: string;
@@ -54,9 +51,11 @@ export type CalendarGroupByMajorDetail = {
   expanded: boolean;
 };
 
-export type CalendarGroupBySubjectName = {
-  [subjectName: string]: CalendarGroupBySubjectNameDetail;
-};
+export type CalendarGroupBySubjectName = Record<
+  string,
+  CalendarGroupBySubjectNameDetail
+>; // key: subjectName
+
 export type CalendarGroupBySubjectNameDetail = {
   majors: string[];
   subjectName: string;
@@ -67,9 +66,8 @@ export type CalendarGroupBySubjectNameDetail = {
   displayOnCalendar: boolean;
 };
 
-export type CalendarGroupByClass = {
-  [subjectClassCode: string]: CalendarGroupByClassDetail;
-};
+export type CalendarGroupByClass = Record<string, CalendarGroupByClassDetail>; // key: subjectClassCode
+
 export type CalendarGroupByClassDetail = {
   majors: string[];
   subjectName: string;

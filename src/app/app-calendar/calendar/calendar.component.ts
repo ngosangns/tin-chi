@@ -64,9 +64,7 @@ export class CalendarComponent {
   processCalendarInDate(
     date: number
   ): { start: number; end: number; defaultName: string }[][] {
-    const groupByName: {
-      [defaultName: string]: { start: number; end: number }[];
-    } = {}; // Nhóm lịch theo tên môn học
+    const groupByName: Record<string, { start: number; end: number }[]> = {}; // Nhóm lịch theo tên môn học
 
     const calendarInDate = this.calendarTableContent$.value[date]; // Lịch trong ngày
     if (!calendarInDate) return [];

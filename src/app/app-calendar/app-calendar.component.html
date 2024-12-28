@@ -4,10 +4,10 @@
   <!-- Toolbar -->
   <div class="flex gap-3 print:hidden">
     <button
-      *ngIf="title?.length"
+      *ngIf="(cs.calendar$ | async)?.title?.length"
       class="btn mb-2 btn-outline btn-active cursor-default border-none hover:bg-neural"
     >
-      {{ title }}
+      {{ (cs.calendar$ | async)!.title }}
     </button>
 
     <button
@@ -20,7 +20,7 @@
 
     <div
       [ngClass]="{
-        'tooltip tooltip-open tooltip-error before:text-neutral-content before:rounded-box': isConflict,
+        'tooltip tooltip-open tooltip-error before:text-neutral-content before:rounded-box': (cs.isConflict$ | async),
       }"
       data-tip="Trùng lịch"
     >
@@ -56,27 +56,17 @@
     <!-- Hiển thị danh sách lịch đã chọn khi in -->
     <ul class="hidden print:block">
       <ng-template
-        *ngFor="
-          let major of (calendar$ | async)?.calendarGroupByMajor ?? {}
-            | keyvalue
-        "
+        *ngFor="let major of (selectedClasses$ | async) || {} | keyvalue"
         [ngIf]="true"
       >
         <ng-template
-          *ngFor="let subject of major.value.subjects ?? {} | keyvalue"
+          *ngFor="let subject of major.value || {} | keyvalue"
           [ngIf]="true"
         >
-          <li
-            *ngIf="
-              subject.value.selectedClass && subject.value.displayOnCalendar
-            "
-            class="mb-3"
-          >
+          <li *ngIf="subject.value.class && subject.value.show" class="mb-3">
             <p class="border px-3 py-1 inline-block">
-              {{
-                subject.value.classes[subject.value.selectedClass].details[0]
-                  .defaultName
-              }}
+              {{ major.key }} - {{ subject.key }}:
+              {{ subject.value.class }}
             </p>
           </li>
         </ng-template>
@@ -89,13 +79,10 @@
       [ngClass]="{
         'hidden': showTab !== 'class-info',
       }"
-      [calendarGroupByMajor]="calendarGroupByMajor"
       (resetClass)="resetClass($event)"
       (selectAll)="selectAll($event)"
       (onChange)="triggerRecalculateTableContent($event)"
-      (onDisplayOnCalendarChange)="autoTh = -1"
-      [oldAuto]="oldAuto"
-      [autoTh]="autoTh"
+      (onDisplayOnCalendarChange)="cs.autoTh$.next(-1)"
     >
     </app-class-info>
 

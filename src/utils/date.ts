@@ -20,3 +20,8 @@ export function countSpecificDayOfWeek(
 
   return count;
 }
+
+export const numToDate = (n: number): Date =>
+  new Date(((n / 10000) | 0) + 2000, (((n / 100) | 0) % 100) - 1, n % 100); // Chuyển số nguyên thành ngày. Ví dụ: 210101 -> 2021-01-01
+export const dateToNum = (d: Date): number =>
+  (d.getFullYear() % 100) * 10000 + (d.getMonth() + 1) * 100 + d.getDate(); // Chuyển ngày thành số nguyên. Ví dụ: 2021-01-01 -> 210101

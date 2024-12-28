@@ -1,25 +1,28 @@
 import { AsyncPipe, CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { BehaviorSubject, Subscription } from 'rxjs';
-import { EXCEL_PATH, JSON_PATH, SESSIONS } from '../../constants/calendar';
+import { BehaviorSubject } from 'rxjs';
 import {
-  AutoMode,
-  CalendarData,
-  CalendarGroupByMajor,
-  CalendarGroupByMajorDetail,
-  CalendarGroupBySubjectName,
-  CalendarTableContent,
-  CalendarTableContentInDate,
-  CalendarTableContentInSession,
-  RawCalendar,
-} from '../../types/calendar';
-import { processCalendar } from '../../utils/calendar_processing';
+  END_AFTERNOON_SESSION,
+  END_MORNING_SESSION,
+  EXCEL_PATH,
+  START_AFTERNOON_SESSION,
+  START_MORNING_SESSION,
+} from '../../constants/calendar';
+import { AutoMode } from '../../types/calendar';
 import { FooterComponent } from '../footer/footer.component';
 import { HeaderComponent } from '../header/header.component';
+import { CalendarService } from './calendar.service';
 import { CalendarComponent } from './calendar/calendar.component';
 import { ClassInfoComponent } from './class-info/class-info.component';
 import { MoreInfoComponent } from './more-info/more-info.component';
+
+export type MajorSelectedSubjects = Record<string, SubjectSelectedClass>; // key: major
+export type SubjectSelectedClass = Record<string, SelectedClass>; // key: subject name
+export type SelectedClass = {
+  show: boolean;
+  class: string;
+};
 
 @Component({
   selector: 'app-app-calendar',
@@ -33,74 +36,27 @@ import { MoreInfoComponent } from './more-info/more-info.component';
     CalendarComponent,
     ClassInfoComponent,
     MoreInfoComponent,
+    AsyncPipe,
   ],
   templateUrl: './app-calendar.component.html',
   styleUrl: './app-calendar.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AppCalendarComponent {
-  SESSIONS = SESSIONS;
   EXCEL_PATH = EXCEL_PATH;
 
-  readonly loading$: BehaviorSubject<boolean>;
-  readonly calendar$: BehaviorSubject<CalendarData | undefined>;
-  readonly calendarTableContent$: BehaviorSubject<CalendarTableContent>;
+  readonly loading$ = new BehaviorSubject<boolean>(true);
 
-  title: string = '';
   showTab: 'class-info' | 'calendar' | 'more-info' = 'class-info';
-  isConflict: boolean = false;
-  autoTh: number = -1;
-  oldAuto: AutoMode = 'none';
-  oldTotalSelectedClass = 0;
 
-  calendarGroupByMajor: [string, CalendarGroupByMajorDetail][] = [];
-  calendarGroupByMajorSub: Subscription;
+  readonly selectedClasses$ = new BehaviorSubject<MajorSelectedSubjects>({});
 
-  private readonly calendarWorker: Worker;
+  constructor(public readonly cs: CalendarService) {}
 
-  constructor() {
-    this.loading$ = new BehaviorSubject<boolean>(true);
-    this.calendar$ = new BehaviorSubject<CalendarData | undefined>(undefined);
-    this.calendarTableContent$ = new BehaviorSubject<any>({});
-
-    this.calendarGroupByMajorSub = this.calendar$.subscribe((calendar) => {
-      this.calendarGroupByMajor = Object.entries(
-        calendar?.calendarGroupByMajor || []
-      ).sort((a, b) => a[0].localeCompare(b[0]));
-    });
-
-    this.calendarWorker = new Worker(
-      new URL('../../workers/calendar.worker', import.meta.url)
-    );
-  }
-
-  ngOnInit(): void {
-    this.fetchData();
-  }
-
-  async fetchData(): Promise<void> {
+  async ngOnInit() {
     try {
-      const response: any = await fetch(JSON_PATH);
-      const data = await response.json();
-
-      // Lấy tiêu đề
-      this.title = data?.title || '';
-
-      // Xử lý dữ liệu lịch học
-      const calendar = processCalendar(
-        (data?.data as Array<RawCalendar>) || []
-      );
-      this.calendar$.next(calendar);
-
-      // Khởi tạo không gian cho bảng lịch dựa vào data lịch
-      const calendarTableContent: CalendarTableContent = {};
-      for (const date of calendar.dateList) {
-        calendarTableContent[date] = <CalendarTableContentInDate>{};
-        for (const session of SESSIONS)
-          calendarTableContent[date][session] =
-            [] as CalendarTableContentInSession;
-      }
-      this.calendarTableContent$.next(calendarTableContent);
+      this.loading$.next(true);
+      await this.cs.fetchData();
     } catch (e: any) {
       console.error(e);
       alert('Có lỗi xảy ra, không thể tải dữ liệu!');
@@ -110,95 +66,23 @@ export class AppCalendarComponent {
   }
 
   checkSession(shift: number): 'morning' | 'afternoon' | 'evening' {
-    if (shift >= 1 && shift <= 6) return 'morning';
-    if (shift >= 7 && shift <= 12) return 'afternoon';
+    if (shift >= START_MORNING_SESSION && shift <= END_MORNING_SESSION)
+      return 'morning';
+    if (shift >= START_AFTERNOON_SESSION && shift <= END_AFTERNOON_SESSION)
+      return 'afternoon';
     return 'evening';
   }
 
   async calculateCalendarTableContent(auto: AutoMode = 'none'): Promise<void> {
-    if (auto != 'none') this.loading$.next(true);
-
-    if (auto !== this.oldAuto || auto === 'none') this.autoTh = 0;
-    else this.autoTh++;
-
-    this.oldAuto = auto;
-
-    this.calendarWorker.postMessage({
-      type: 'calculateCalendarTableContent',
-      data: {
-        calendarTableContent: this.calendarTableContent$.value,
-        calendar: this.calendar$.value,
-        sessions: SESSIONS,
-        auto,
-        autoTh: this.autoTh,
-      },
-    });
-
     try {
-      await new Promise((resolve) => {
-        this.calendarWorker.onmessage = async (res: {
-          data: {
-            type: string;
-            data: any;
-          };
-        }) => {
-          switch (res.data.type) {
-            case 'calculateCalendarTableContent': {
-              const data: {
-                updatedCalendarTableContent: CalendarTableContent;
-                updatedCalendarGroupByMajor: CalendarGroupByMajor;
-                totalSessionsConflicted: number;
-              } = res.data.data;
-
-              if (data) {
-                // Cập nhật dữ liệu lịch học sau khi xử lý
-                this.calendarTableContent$.next(
-                  data.updatedCalendarTableContent
-                );
-                const calendar = this.calendar$.value;
-                if (calendar) {
-                  calendar.calendarGroupByMajor =
-                    data.updatedCalendarGroupByMajor;
-                  this.calendar$.next(calendar);
-                }
-                this.isConflict = data.totalSessionsConflicted > 0;
-              } else throw new Error('No data received from worker!');
-
-              resolve({});
-              break;
-            }
-          }
-        };
-        this.calendarWorker.onerror = (err: any) => {
-          throw err;
-        };
-      });
+      if (auto != 'none') this.loading$.next(true); // Show loading spinner vì việc tính toán khi xếp lịch tự động mất nhiều thời gian
+      await this.cs.calculateCalendarTableContent(auto);
     } catch (e: any) {
       console.error(e);
       alert('Có lỗi xảy ra, không thể cập nhật dữ liệu!');
     } finally {
-      this.calendarWorker.onmessage = null;
-      this.calendarWorker.onmessageerror = null;
-      this.calendarWorker.onerror = null;
-
       this.loading$.next(false);
     }
-  }
-
-  totalDisplayOnCalendarClass(): number {
-    const calendar = this.calendar$.value;
-    if (!calendar) return 0;
-
-    let total = 0;
-    for (const major in calendar.calendarGroupByMajor) {
-      const majorCalendar = calendar.calendarGroupByMajor[major];
-      for (const subjectName in majorCalendar.subjects) {
-        const subject = majorCalendar.subjects[subjectName];
-        if (subject.displayOnCalendar) total++;
-      }
-    }
-
-    return total;
   }
 
   triggerRecalculateTableContent(e: Event) {
@@ -209,35 +93,30 @@ export class AppCalendarComponent {
       auto: AutoMode;
     };
 
-    if (data.field === 'displayOnCalendar') this.autoTh = 0;
+    if (data.field === 'displayOnCalendar') this.cs.autoTh$.next(0);
 
     this.calculateCalendarTableContent(data.auto);
   }
 
   resetClass(e: Event): void {
     const major = e as unknown as string;
-
-    const calendar = this.calendar$.value;
-    const majorCalendar =
-      calendar?.calendarGroupByMajor?.[major] ?? <CalendarGroupByMajor>{};
-
-    const subjects = majorCalendar.subjects as CalendarGroupBySubjectName;
-    for (const subjectName in subjects) {
-      subjects[subjectName].displayOnCalendar = false;
-      subjects[subjectName].selectedClass = '';
-    }
+    this.selectedClasses$.value[major] = {};
+    this.selectedClasses$.next(this.selectedClasses$.value);
   }
 
   selectAll(e: Event): void {
     const major = e as unknown as string;
-
-    const calendar = this.calendar$.value;
-    const majorCalendar =
-      calendar?.calendarGroupByMajor?.[major] ?? <CalendarGroupByMajor>{};
-
-    const subjects = majorCalendar.subjects as CalendarGroupBySubjectName;
-    for (const subjectName in subjects)
-      subjects[subjectName].displayOnCalendar = true;
+    const allSubjectNamesOfMajor = Object.keys(
+      this.cs.calendar$.value.majors[major]
+    );
+    for (const subjectName of allSubjectNamesOfMajor) {
+      if (!this.selectedClasses$.value[major][subjectName])
+        this.selectedClasses$.value[major][subjectName] = {
+          show: true,
+          class: 'all',
+        };
+      else this.selectedClasses$.value[major][subjectName].show = true;
+    }
   }
 
   switchTab(tab: 'class-info' | 'calendar' | 'more-info'): void {

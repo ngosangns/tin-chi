@@ -1,14 +1,21 @@
 export enum Field {
   Class = 'class',
-  DayOfWeek = 'day',
+  Teacher = 'teacher',
+
+  DayOfWeek = 'dayOfWeek',
+  DayOfWeekStandard = 'dayOfWeekStandard',
+
   Session = 'session',
+  StartSession = 'startSession',
+  EndSession = 'endSession',
+
   StartDate = 'startDate',
   EndDate = 'endDate',
-  Teacher = 'teacher',
 }
 
-export type SheetData = {
-  [sheetName: string]: {
+export type SheetData = Record<
+  string,
+  {
     startRow: number;
     endRow: number;
     fieldColumn: {
@@ -19,11 +26,12 @@ export type SheetData = {
       [Field.EndDate]: string;
       [Field.Teacher]: string;
     };
-  };
-};
+  }
+>; // key: sheetName
 
-export type JSONData = {
-  [sheetName: string]: {
+export type JSONData = Record<
+  string,
+  {
     fieldData: {
       [Field.Class]: string[];
       [Field.DayOfWeek]: string[];
@@ -32,14 +40,34 @@ export type JSONData = {
       [Field.EndDate]: string[];
       [Field.Teacher]: string[];
     };
-  };
+  }
+>; // key: sheetName
+
+export type CellData = Record<string, any>;
+
+export type MajorData = Record<string, SubjectData>; // key: subject name
+
+export type SubjectData = Record<string, ClassData>; // key: class code
+
+export type ClassData = {
+  practiceSchedules?: Record<string, Schedules>; // key: class code
+  schedules: Schedules;
+  [Field.Teacher]: string;
 };
 
-export interface CellData {
-  [key: string]: any;
-}
+export type Schedules = Schedule[];
+
+export type Schedule = {
+  [Field.StartDate]: number;
+  [Field.EndDate]: number;
+  [Field.DayOfWeekStandard]: number;
+  [Field.StartSession]: number;
+  [Field.EndSession]: number;
+};
 
 export interface JSONResultData {
   title: string;
-  data: [string, number, string, string, string][]; // [class, day, startDate, endDate, session, teacher]
+  minDate: number;
+  maxDate: number;
+  majors: Record<string, MajorData>;
 }

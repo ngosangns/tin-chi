@@ -2,78 +2,14 @@ import fs from 'fs';
 import { WorkSheet, utils, readFile } from 'xlsx';
 import {
   CellData,
+  ClassData,
   Field,
   JSONData,
   JSONResultData,
-  SheetData,
+  MajorData,
+  SubjectData,
 } from '../types/excel';
-
-// Cài đặt thông số cho file Excel
-// Thực hiện mỗi khi cập nhật file Excel mới
-const TITLE = 'Học kỳ 2 năm học 2023 - 2024';
-const SHEET_DATA: SheetData = {
-  CT4: {
-    startRow: 5,
-    endRow: 112,
-    fieldColumn: {
-      [Field.Class]: 'D',
-      [Field.DayOfWeek]: 'G',
-      [Field.Session]: 'H',
-      [Field.StartDate]: 'J',
-      [Field.EndDate]: 'K',
-      [Field.Teacher]: 'L',
-    },
-  },
-  AT17CT5DT4: {
-    startRow: 5,
-    endRow: 373,
-    fieldColumn: {
-      [Field.Class]: 'D',
-      [Field.DayOfWeek]: 'G',
-      [Field.Session]: 'H',
-      [Field.StartDate]: 'J',
-      [Field.EndDate]: 'K',
-      [Field.Teacher]: 'L',
-    },
-  },
-  AT18CT6DT5: {
-    startRow: 5,
-    endRow: 320,
-    fieldColumn: {
-      [Field.Class]: 'D',
-      [Field.DayOfWeek]: 'G',
-      [Field.Session]: 'H',
-      [Field.StartDate]: 'J',
-      [Field.EndDate]: 'K',
-      [Field.Teacher]: 'L',
-    },
-  },
-  AT19CT7DT6: {
-    startRow: 5,
-    endRow: 424,
-    fieldColumn: {
-      [Field.Class]: 'D',
-      [Field.DayOfWeek]: 'G',
-      [Field.Session]: 'H',
-      [Field.StartDate]: 'J',
-      [Field.EndDate]: 'K',
-      [Field.Teacher]: 'L',
-    },
-  },
-  AT20CT8DT7: {
-    startRow: 5,
-    endRow: 398,
-    fieldColumn: {
-      [Field.Class]: 'D',
-      [Field.DayOfWeek]: 'G',
-      [Field.Session]: 'H',
-      [Field.StartDate]: 'J',
-      [Field.EndDate]: 'K',
-      [Field.Teacher]: 'L',
-    },
-  },
-};
-// ----------------------
+import { SHEET_DATA, TITLE } from '../configs/excel';
 
 const EXCEL_PATH = './public/tinchi.xlsx';
 const JSON_PATH = './public/tinchi.json';
@@ -131,49 +67,140 @@ function main() {
     // Initialize the JSON sheet data
     jsonData[sheetName] = {
       fieldData: {
-        [Field.Class]: [],
-        [Field.DayOfWeek]: [],
-        [Field.Session]: [],
-        [Field.StartDate]: [],
-        [Field.EndDate]: [],
-        [Field.Teacher]: [],
+        [Field.Class]: <string[]>[],
+        [Field.DayOfWeek]: <string[]>[],
+        [Field.Session]: <string[]>[],
+        [Field.StartDate]: <string[]>[],
+        [Field.EndDate]: <string[]>[],
+        [Field.Teacher]: <string[]>[],
       },
     };
 
     const jsonSheetData = jsonData[sheetName];
+    const { startRow, endRow } = sheetData;
 
-    for (const field of Object.values(Field)) {
-      const { startRow, endRow } = sheetData;
-      jsonSheetData.fieldData[field] = readExcelColumnToJson(
-        workSheet,
-        sheetData.fieldColumn[field],
-        startRow,
-        endRow
-      );
-    }
+    jsonSheetData.fieldData[Field.Class] = readExcelColumnToJson(
+      workSheet,
+      sheetData.fieldColumn[Field.Class],
+      startRow,
+      endRow
+    );
+    jsonSheetData.fieldData[Field.DayOfWeek] = readExcelColumnToJson(
+      workSheet,
+      sheetData.fieldColumn[Field.DayOfWeek],
+      startRow,
+      endRow
+    );
+    jsonSheetData.fieldData[Field.Session] = readExcelColumnToJson(
+      workSheet,
+      sheetData.fieldColumn[Field.Session],
+      startRow,
+      endRow
+    );
+    jsonSheetData.fieldData[Field.StartDate] = readExcelColumnToJson(
+      workSheet,
+      sheetData.fieldColumn[Field.StartDate],
+      startRow,
+      endRow
+    );
+    jsonSheetData.fieldData[Field.EndDate] = readExcelColumnToJson(
+      workSheet,
+      sheetData.fieldColumn[Field.EndDate],
+      startRow,
+      endRow
+    );
+    jsonSheetData.fieldData[Field.Teacher] = readExcelColumnToJson(
+      workSheet,
+      sheetData.fieldColumn[Field.Teacher],
+      startRow,
+      endRow
+    );
   }
 
   // Write the JSON data to a file
   const jsonResultData: JSONResultData = {
     title: TITLE,
-    data: [],
+    minDate: Infinity,
+    maxDate: 0,
+    majors: {},
   };
 
   for (const sheetName of Object.keys(jsonData)) {
     const { fieldData } = jsonData[sheetName];
+    const majorData: MajorData = {};
 
     for (let i = 0; i < fieldData[Field.Class].length; i++) {
-      const curDayOfWeek = fieldData[Field.DayOfWeek][i];
+      const classTitle = fieldData[Field.Class][i];
 
-      jsonResultData.data.push([
-        fieldData[Field.Class][i],
-        parseInt(curDayOfWeek === 'CN' ? '8' : curDayOfWeek),
-        fieldData[Field.StartDate][i],
-        fieldData[Field.EndDate][i],
-        fieldData[Field.Session][i],
-        // fieldData[Field.Teacher][i] ?? '',
-      ]);
+      const subjectName = /\((.+?)\)$/.test(classTitle)
+        ? classTitle.replace(/\((.+?)\)$/, '').trim()
+        : classTitle;
+
+      const classCodeWithPracticeClassCode = /\((.+?)\)$/.test(classTitle)
+        ? classTitle.match(/\((.+?)\)$/)?.[1] || ''
+        : '';
+
+      const classCode = classCodeWithPracticeClassCode.includes('.')
+        ? classCodeWithPracticeClassCode.split('.')[0]
+        : classCodeWithPracticeClassCode;
+
+      const practiceClassCode = classCodeWithPracticeClassCode.includes('.')
+        ? classCodeWithPracticeClassCode.split('.')[1]
+        : '';
+
+      if (!majorData[subjectName]) majorData[subjectName] = <SubjectData>{};
+
+      if (!majorData[subjectName][classCode])
+        majorData[subjectName][classCode] = <ClassData>{
+          schedules: [],
+          [Field.Teacher]: fieldData[Field.Teacher][i] ?? '',
+        };
+
+      const classData = majorData[subjectName][classCode];
+
+      let schedules = classData.schedules;
+
+      if (practiceClassCode.length) {
+        if (!classData.practiceSchedules) classData.practiceSchedules = {};
+        if (!classData.practiceSchedules[practiceClassCode])
+          classData.practiceSchedules[practiceClassCode] = [];
+
+        schedules = classData.practiceSchedules[practiceClassCode];
+      }
+
+      const currentStartDate = Number(
+        fieldData[Field.StartDate][i].split('/').reverse().join('')
+      );
+      const currentEndDate = Number(
+        fieldData[Field.EndDate][i].split('/').reverse().join('')
+      );
+
+      if (currentStartDate < jsonResultData.minDate)
+        jsonResultData.minDate = currentStartDate;
+      if (currentEndDate > jsonResultData.maxDate)
+        jsonResultData.maxDate = currentEndDate;
+
+      const session = fieldData[Field.Session][i].split('->').map(Number);
+      const startSession = session[0];
+      const endSession = session[1];
+
+      const dayOfWeek = parseInt(
+        fieldData[Field.DayOfWeek][i] === 'CN'
+          ? '8'
+          : fieldData[Field.DayOfWeek][i]
+      );
+      const dayOfWeekStandard = dayOfWeek - 1 === 7 ? 0 : dayOfWeek - 1;
+
+      schedules.push({
+        [Field.StartDate]: currentStartDate,
+        [Field.EndDate]: currentEndDate,
+        [Field.DayOfWeekStandard]: dayOfWeekStandard,
+        [Field.StartSession]: startSession,
+        [Field.EndSession]: endSession,
+      });
     }
+
+    jsonResultData.majors[sheetName] = majorData;
   }
 
   // Write the JSON data to a file
