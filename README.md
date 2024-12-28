@@ -18,7 +18,7 @@ yarn start
 
 1. Clone repo về và chuẩn bị file excel tín chỉ của trường cấp.
 2. Copy file excel vào đường dẫn `public/tinchi.xlsx` của project.
-3. Chỉnh sửa biến `TITLE` và `SHEET_DATA` trong `src/scripts/excel-to-json.ts`;
+3. Chỉnh sửa biến `TITLE` và `SHEET_DATA` trong `src/configs/excel.ts`;
 4. Chạy lệnh `yarn convert`.
 
 ## Deploy

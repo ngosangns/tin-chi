@@ -2,49 +2,51 @@
 
 <main class="app">
   <!-- Toolbar -->
-  <div class="flex gap-3 print:hidden">
+  <div class="flex gap-3 overflow-x-auto print:hidden">
+    @let calendar = cs.calendar$ | async;
     <button
-      *ngIf="(cs.calendar$ | async)?.title?.length"
-      class="btn mb-2 btn-outline btn-active cursor-default border-none hover:bg-neural"
+      *ngIf="calendar?.title?.length"
+      class="hidden md:inline-block btn mb-2 btn-outline btn-active cursor-default border-none hover:bg-neural"
     >
-      {{ (cs.calendar$ | async)!.title }}
+      {{ calendar!.title }}
     </button>
 
     <button
-      class="btn mb-2 border-none hover:bg-base-200"
+      class="btn-md btn-primary text-md mb-2 border-none hover:bg-base-200 whitespace-nowrap"
       (click)="switchTab('class-info')"
-      [ngClass]="{ 'btn-primary hover:bg-primary': showTab === 'class-info' }"
+      [ngClass]="{ 'btn-active hover:bg-primary': showTab === 'class-info' }"
     >
       Thông tin lớp
     </button>
 
     <div
       [ngClass]="{
-        'tooltip tooltip-open tooltip-error before:text-neutral-content before:rounded-box': (cs.isConflict$ | async),
+        'tooltip tooltip-open tooltip-error before:text-neutral-content before:rounded-box':
+          (cs.calendarTableData$ | async)?.totalConflictedSessions
       }"
       data-tip="Trùng lịch"
     >
       <button
-        class="btn mb-2 border-none hover:bg-base-200"
+        class="btn-md btn-primary text-md mb-2 border-none hover:bg-base-200 whitespace-nowrap"
         (click)="switchTab('calendar')"
-        [ngClass]="{ 'btn-primary hover:bg-primary': showTab === 'calendar' }"
+        [ngClass]="{ 'btn-active hover:bg-primary': showTab === 'calendar' }"
       >
         Lịch học
       </button>
     </div>
 
     <button
-      class="btn mb-2 border-none hover:bg-base-200"
+      class="btn-md btn-primary text-md mb-2 border-none hover:bg-base-200 whitespace-nowrap"
       (click)="switchTab('more-info')"
-      [ngClass]="{ 'btn-primary hover:bg-primary': showTab === 'more-info' }"
+      [ngClass]="{ 'btn-active hover:bg-primary': showTab === 'more-info' }"
     >
       Thông tin thêm
     </button>
 
-    <div class="flex-grow"></div>
+    <div class="flex-grow hidden md:block"></div>
 
     <button
-      class="btn mb-2 border-none"
+      class="btn-md text-md mb-2 border-none hover:bg-base-200 whitespace-nowrap"
       (click)="print()"
       [disabled]="loading$ | async"
     >
@@ -56,7 +58,7 @@
     <!-- Hiển thị danh sách lịch đã chọn khi in -->
     <ul class="hidden print:block">
       <ng-template
-        *ngFor="let major of (selectedClasses$ | async) || {} | keyvalue"
+        *ngFor="let major of (cs.selectedClasses$ | async) || {} | keyvalue"
         [ngIf]="true"
       >
         <ng-template
@@ -79,10 +81,10 @@
       [ngClass]="{
         'hidden': showTab !== 'class-info',
       }"
-      (resetClass)="resetClass($event)"
-      (selectAll)="selectAll($event)"
-      (onChange)="triggerRecalculateTableContent($event)"
-      (onDisplayOnCalendarChange)="cs.autoTh$.next(-1)"
+      (onChangeClass)="cs.changeClass($event)"
+      (onChangeShow)="cs.changeShow($event)"
+      (selectMajor)="cs.selectMajor($event)"
+      (generateCombinationOfSubjects)="generateCombinationOfSubjects($event)"
     >
     </app-class-info>
 
@@ -92,9 +94,6 @@
       [ngClass]="{
         'hidden': showTab !== 'calendar',
       }"
-      [SESSIONS]="SESSIONS"
-      [calendar$]="calendar$"
-      [calendarTableContent$]="calendarTableContent$"
     >
     </app-calendar>
 

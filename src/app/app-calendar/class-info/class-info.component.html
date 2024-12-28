@@ -3,72 +3,63 @@
   class="overflow-scroll overflow-x-hidden overflow-y-overlay max-h-[calc(100vh-18rem)]"
 >
   <div
-    class="sticky top-0 py-3 mb-3 rounded-b-md z-10 flex gap-3 flex-wrap max-w-full bg-base-100"
+    class="md:sticky top-0 py-3 mb-3 rounded-b-md z-10 flex gap-3 max-w-full bg-base-100 overflow-x-auto"
   >
+    @let oldAuto = cs.oldAuto$ | async; @let autoTh = (cs.autoTh$ | async)!;
     <button
-      class="btn btn-sm btn-outline text-sm"
-      (click)="onTriggerAuto('refer-non-overlap')"
+      class="btn btn-xs text-xs md:btn-sm md:text-sm btn-outline"
+      (click)="generateCombinationOfSubjects('refer-non-overlap')"
     >
       Tự động xếp lịch
       <span
-        class="btn btn-active btn-xs"
-        *ngIf="
-          (cs.oldAuto$ | async) === 'refer-non-overlap' &&
-          (cs.autoTh$ | async)! > -1
-        "
+        class="text-xs md:btn md:btn-active md:btn-xs"
+        *ngIf="oldAuto === 'refer-non-overlap' && autoTh > -1"
       >
-        {{ (cs.autoTh$ | async)! + 1 }}
+        {{ autoTh + 1 }}
       </span>
     </button>
     <button
-      class="btn btn-sm btn-outline text-sm"
-      (click)="onTriggerAuto('refer-non-overlap-morning')"
+      class="btn btn-xs text-xs md:btn-sm md:text-sm btn-outline"
+      (click)="generateCombinationOfSubjects('refer-non-overlap-morning')"
     >
       Tự động xếp lịch (ưu tiên buổi sáng)
       <span
-        class="btn btn-active btn-xs"
-        *ngIf="
-          (cs.oldAuto$ | async) === 'refer-non-overlap-morning' &&
-          (cs.autoTh$ | async)! > -1
-        "
+        class="text-xs md:btn md:btn-active md:btn-xs"
+        *ngIf="oldAuto === 'refer-non-overlap-morning' && autoTh! > -1"
       >
-        {{ (cs.autoTh$ | async)! + 1 }}
+        {{ autoTh + 1 }}
       </span>
     </button>
     <button
-      class="btn btn-sm btn-outline text-sm"
-      (click)="onTriggerAuto('refer-non-overlap-afternoon')"
+      class="btn btn-xs text-xs md:btn-sm md:text-sm btn-outline"
+      (click)="generateCombinationOfSubjects('refer-non-overlap-afternoon')"
     >
       Tự động xếp lịch (ưu tiên buổi chiều)
       <span
-        class="btn btn-active btn-xs"
-        *ngIf="
-          (cs.oldAuto$ | async) === 'refer-non-overlap-afternoon' &&
-          (cs.autoTh$ | async)! > -1
-        "
+        class="text-xs md:btn md:btn-active md:btn-xs"
+        *ngIf="oldAuto === 'refer-non-overlap-afternoon' && autoTh > -1"
       >
-        {{ (cs.autoTh$ | async)! + 1 }}
+        {{ autoTh + 1 }}
       </span>
     </button>
     <button
-      class="btn btn-sm btn-outline text-sm"
-      (click)="onTriggerAuto('refer-non-overlap-evening')"
+      class="btn btn-xs text-xs md:btn-sm md:text-sm btn-outline"
+      (click)="generateCombinationOfSubjects('refer-non-overlap-evening')"
     >
       Tự động xếp lịch (ưu tiên buổi tối)
       <span
         class="btn btn-active btn-xs"
-        *ngIf="
-          (cs.oldAuto$ | async) === 'refer-non-overlap-evening' &&
-          (cs.autoTh$ | async)! > -1
-        "
+        *ngIf="oldAuto === 'refer-non-overlap-evening' && autoTh > -1"
       >
-        {{ (cs.autoTh$ | async)! + 1 }}
+        {{ autoTh + 1 }}
       </span>
     </button>
   </div>
 
+  @let calendar = cs.calendar$ | async; @let selectedClasses =
+  (cs.selectedClasses$ | async)!;
   <div
-    *ngFor="let major of (cs.calendar$ | async)?.majors || {} | keyvalue"
+    *ngFor="let major of calendar?.majors || {} | keyvalue"
     class="collapse collapse-plus border border-base-content bg-base-100 w-full mx-auto mb-4"
   >
     <input type="checkbox" />
@@ -78,73 +69,50 @@
       </b>
       <span
         class="badge badge-primary ml-3 !text-xs font-normal -mt-1 translate-y-[-0.2rem]"
-        *ngIf="Object.keys((selectedClasses$ | async)?.[major.key] || {}).length"
+        *ngIf="isMajorSelecting(major.key)"
       >
         Đang chọn
       </span>
     </div>
     <div class="collapse-content">
-      <div class="inline-block float-right">
+      <div class="flex justify-center md:justify-end gap-3">
         <button
-          class="btn btn-sm btn-outline text-sm ml-3"
-          (click)="resetMajor(major.key)"
+          class="btn btn-xs text-xs md:btn-sm md:text-sm btn-outline"
+          (click)="selectMajor(major.key, false)"
         >
-          Reset
+          Bỏ chọn tất cả
         </button>
         <button
-          class="btn btn-sm btn-outline text-sm ml-3"
-          (click)="selectMajor(major.key)"
+          class="btn btn-xs text-xs md:btn-sm md:text-sm btn-outline"
+          (click)="selectMajor(major.key, true)"
         >
           Chọn tất cả
         </button>
       </div>
-      <table class="table table-compact w-full">
-        <thead>
-          <tr>
-            <th>Tên môn</th>
-            <th class="pl-5 w-40">Lớp</th>
-            <th class="text-center w-24">Hiển thị</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let subject of major.value | keyvalue">
-            <td>
-              <div class="flex items-center space-x-3">
-                <span class="font-bold">{{ subject.key }}</span>
-              </div>
-            </td>
-            <td class="w-60 max-w-[33%]">
-              <select
-                class="select select-bordered select-sm w-full"
-                [value]="
-                  (selectedClasses$ | async)?.[major.key]?.[subject.key]?.class
-                "
-                (change)="onChangeClass(major.key, subject.key)"
-              >
-                <option value="">{{ defaultClassLabel }}</option>
-                <option
-                  *ngFor="let code of subject | keyvalue"
-                  [value]="code.key"
-                >
-                  {{ code.key }}
-                </option>
-              </select>
-            </td>
-            <td class="text-center w-24">
-              <label>
-                <input
-                  type="checkbox"
-                  class="checkbox"
-                  [value]="
-                  (selectedClasses$ | async)?.[major.key]?.[subject.key]?.show
-                "
-                  (change)="onChangeShow(major.key, subject.key)"
-                />
-              </label>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+      <div class="flex flex-col mt-6">
+        <div
+          *ngFor="let subject of major.value | keyvalue"
+          class="flex flex-col-reverse md:flex-row gap-3 py-6 border-t border-base-content items-center"
+        >
+          <div class="flex-grow flex gap-3 flex-wrap items-center">
+            <button
+              class="btn btn-xs text-xs md:btn-sm md:text-sm btn-outline"
+              [ngClass]="[selectedClasses?.[major.key]?.[subject.key]?.class === code.key ? 'btn-active btn-accent' : 'btn-outline']"
+              *ngFor="let code of subject.value | keyvalue"
+              (click)="onChangeClass(major.key, subject.key, selectedClasses?.[major.key]?.[subject.key]?.class !== code.key ? code.key : null)"
+            >
+              {{ code.key }}
+            </button>
+          </div>
+          <button
+            class="btn btn-sm text-xs w-full md:w-auto md:btn-md md:text-md btn-outline"
+            [ngClass]="[selectedClasses?.[major.key]?.[subject.key]?.show ? 'btn-active btn-primary' : 'btn-outline']"
+            (click)="onChangeShow(major.key, subject.key)"
+          >
+            {{ subject.key }}
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 </div>

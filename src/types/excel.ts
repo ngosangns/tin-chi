@@ -50,7 +50,7 @@ export type MajorData = Record<string, SubjectData>; // key: subject name
 export type SubjectData = Record<string, ClassData>; // key: class code
 
 export type ClassData = {
-  practiceSchedules?: Record<string, Schedules>; // key: class code
+  practiceSchedules?: Record<string, Schedules>; // key: practice class code
   schedules: Schedules;
   [Field.Teacher]: string;
 };

@@ -1,16 +1,14 @@
 import { CommonModule } from '@angular/common';
 import {
   ChangeDetectionStrategy,
+  ChangeDetectorRef,
   Component,
   EventEmitter,
-  Input,
   Output,
 } from '@angular/core';
-import { AutoMode } from '../../../types/calendar';
 import { FormsModule } from '@angular/forms';
+import { AutoMode } from '../../../types/calendar';
 import { CalendarService } from '../calendar.service';
-import { BehaviorSubject } from 'rxjs';
-import { MajorSelectedSubjects } from '../app-calendar.component';
 
 @Component({
   selector: 'app-class-info',
@@ -22,50 +20,69 @@ import { MajorSelectedSubjects } from '../app-calendar.component';
 })
 export class ClassInfoComponent {
   Object = Object;
+  JSON = JSON;
 
-  @Input('selectedClasses$') selectedClasses$ =
-    new BehaviorSubject<MajorSelectedSubjects>({});
+  @Output('selectMajor') readonly selectMajor$ = new EventEmitter<{
+    major: string;
+    select: boolean;
+  }>();
 
-  @Output('resetMajor') readonly resetMajor$ = new EventEmitter<string>();
-  @Output('selectMajor') readonly selectMajor$ = new EventEmitter<string>();
   @Output('onChangeClass') readonly onChangeClass$ = new EventEmitter<{
-    major: string;
-    subject: string;
+    majorKey: string;
+    subjectName: string;
+    classCode: string | null;
   }>();
+
   @Output('onChangeShow') readonly onChangeShow$ = new EventEmitter<{
-    major: string;
-    subject: string;
+    majorKey: string;
+    subjectName: string;
+    show: boolean;
   }>();
-  @Output('onTriggerAuto') readonly onTriggerAuto$ =
-    new EventEmitter<AutoMode>();
+
+  @Output('generateCombinationOfSubjects')
+  readonly generateCombinationOfSubjects$ = new EventEmitter<AutoMode>();
 
   readonly defaultClassLabel = 'Chọn lớp';
 
-  constructor(public readonly cs: CalendarService) {}
+  constructor(
+    public readonly cs: CalendarService,
+    private cdr: ChangeDetectorRef
+  ) {}
 
-  resetMajor(major: string): void {
-    this.resetMajor$.emit(major);
+  selectMajor(major: string, select: boolean): void {
+    this.selectMajor$.emit({ major, select });
+    this.cdr.detectChanges();
+    this.cdr.reattach();
   }
 
-  selectMajor(major: string): void {
-    this.selectMajor$.emit(major);
+  generateCombinationOfSubjects(auto: AutoMode): void {
+    this.generateCombinationOfSubjects$.emit(auto);
   }
 
-  onTriggerAuto(auto: AutoMode): void {
-    this.onTriggerAuto$.emit(auto);
-  }
-
-  onChangeShow(major: string, subject: string): void {
+  onChangeShow(majorKey: string, subjectName: string): void {
     this.onChangeShow$.emit({
-      major,
-      subject,
+      majorKey,
+      subjectName,
+      show: !this.cs.selectedClasses$.value?.[majorKey]?.[subjectName]?.show,
     });
   }
 
-  onChangeClass(major: string, subject: string): void {
+  onChangeClass(
+    majorKey: string,
+    subjectName: string,
+    classCode: string | null
+  ): void {
     this.onChangeClass$.emit({
-      major,
-      subject,
+      majorKey,
+      subjectName,
+      classCode,
     });
+  }
+
+  isMajorSelecting(major: string): boolean {
+    const selectedClasses = this.cs.selectedClasses$.value;
+    if (!selectedClasses[major]) return false;
+    const majorData = selectedClasses[major];
+    return Object.values(majorData).some((subjectData) => subjectData.show);
   }
 }

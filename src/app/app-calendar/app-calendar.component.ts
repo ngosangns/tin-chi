@@ -21,7 +21,7 @@ export type MajorSelectedSubjects = Record<string, SubjectSelectedClass>; // key
 export type SubjectSelectedClass = Record<string, SelectedClass>; // key: subject name
 export type SelectedClass = {
   show: boolean;
-  class: string;
+  class: string | null;
 };
 
 @Component({
@@ -49,8 +49,6 @@ export class AppCalendarComponent {
 
   showTab: 'class-info' | 'calendar' | 'more-info' = 'class-info';
 
-  readonly selectedClasses$ = new BehaviorSubject<MajorSelectedSubjects>({});
-
   constructor(public readonly cs: CalendarService) {}
 
   async ngOnInit() {
@@ -65,57 +63,23 @@ export class AppCalendarComponent {
     }
   }
 
-  checkSession(shift: number): 'morning' | 'afternoon' | 'evening' {
-    if (shift >= START_MORNING_SESSION && shift <= END_MORNING_SESSION)
+  getSessionShift(session: number): 'morning' | 'afternoon' | 'evening' {
+    if (session >= START_MORNING_SESSION && session <= END_MORNING_SESSION)
       return 'morning';
-    if (shift >= START_AFTERNOON_SESSION && shift <= END_AFTERNOON_SESSION)
+    if (session >= START_AFTERNOON_SESSION && session <= END_AFTERNOON_SESSION)
       return 'afternoon';
     return 'evening';
   }
 
-  async calculateCalendarTableContent(auto: AutoMode = 'none'): Promise<void> {
+  async generateCombinationOfSubjects(auto: AutoMode): Promise<void> {
     try {
-      if (auto != 'none') this.loading$.next(true); // Show loading spinner vì việc tính toán khi xếp lịch tự động mất nhiều thời gian
-      await this.cs.calculateCalendarTableContent(auto);
+      this.loading$.next(true); // Show loading spinner vì việc tính toán khi xếp lịch tự động mất nhiều thời gian
+      await this.cs.generateCombinationOfSubjects(auto);
     } catch (e: any) {
       console.error(e);
       alert('Có lỗi xảy ra, không thể cập nhật dữ liệu!');
     } finally {
       this.loading$.next(false);
-    }
-  }
-
-  triggerRecalculateTableContent(e: Event) {
-    const data = e as unknown as {
-      major: string;
-      subject: string;
-      field: 'selectedClass' | 'displayOnCalendar';
-      auto: AutoMode;
-    };
-
-    if (data.field === 'displayOnCalendar') this.cs.autoTh$.next(0);
-
-    this.calculateCalendarTableContent(data.auto);
-  }
-
-  resetClass(e: Event): void {
-    const major = e as unknown as string;
-    this.selectedClasses$.value[major] = {};
-    this.selectedClasses$.next(this.selectedClasses$.value);
-  }
-
-  selectAll(e: Event): void {
-    const major = e as unknown as string;
-    const allSubjectNamesOfMajor = Object.keys(
-      this.cs.calendar$.value.majors[major]
-    );
-    for (const subjectName of allSubjectNamesOfMajor) {
-      if (!this.selectedClasses$.value[major][subjectName])
-        this.selectedClasses$.value[major][subjectName] = {
-          show: true,
-          class: 'all',
-        };
-      else this.selectedClasses$.value[major][subjectName].show = true;
     }
   }
 

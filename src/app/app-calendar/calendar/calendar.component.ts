@@ -1,7 +1,6 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
-import { BehaviorSubject } from 'rxjs';
-import { CalendarData, CalendarTableContent } from '../../../types/calendar';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { map, Observable } from 'rxjs';
 import {
   END_AFTERNOON_SESSION,
   END_EVENING_SESSION,
@@ -10,6 +9,12 @@ import {
   START_EVENING_SESSION,
   START_MORNING_SESSION,
 } from '../../../constants/calendar';
+import {
+  dateToNum,
+  numToDate,
+  getTotalDaysBetweenDates,
+} from '../../../utils/date';
+import { CalendarService } from '../calendar.service';
 
 @Component({
   selector: 'app-calendar',
@@ -27,12 +32,10 @@ export class CalendarComponent {
   START_EVENING_SESSION = START_EVENING_SESSION;
   END_EVENING_SESSION = END_EVENING_SESSION;
 
-  @Input('calendar$') calendar$: BehaviorSubject<CalendarData | undefined>;
-  @Input('calendarTableContent$')
-  calendarTableContent$: BehaviorSubject<CalendarTableContent>;
-  @Input('SESSIONS') SESSIONS: number[] = [];
+  dateToNum = dateToNum;
+  getTotalDaysBetweenDates = getTotalDaysBetweenDates;
 
-  readonly DAY_OF_WEEK_MAP = [
+  readonly DAY_OF_WEEK_LABEL_MAP = [
     'Chủ Nhật',
     'Thứ Hai',
     'Thứ Ba',
@@ -42,13 +45,23 @@ export class CalendarComponent {
     'Thứ Bảy',
   ];
 
-  constructor() {
-    this.calendar$ = new BehaviorSubject<CalendarData | undefined>(undefined);
-    this.calendarTableContent$ = new BehaviorSubject<any>({});
-  }
+  dateList$: Observable<Date[]>;
 
-  getDayFromDate(date: number): number {
-    return new Date(date).getDay();
+  constructor(public readonly cs: CalendarService) {
+    this.dateList$ = this.cs.calendar$.pipe(
+      map((calendar) => {
+        if (!calendar.minDate || !calendar.maxDate) return [];
+
+        const minDate = numToDate(calendar.minDate);
+        const maxDate = numToDate(calendar.maxDate);
+
+        const result: Date[] = [];
+        for (let i = minDate; i <= maxDate; i.setDate(i.getDate() + 1))
+          result.push(new Date(i));
+
+        return result;
+      })
+    );
   }
 
   dateNumberToDate(date: number): Date {
@@ -61,68 +74,7 @@ export class CalendarComponent {
     return 'evening';
   }
 
-  processCalendarInDate(
-    date: number
-  ): { start: number; end: number; defaultName: string }[][] {
-    const groupByName: Record<string, { start: number; end: number }[]> = {}; // Nhóm lịch theo tên môn học
-
-    const calendarInDate = this.calendarTableContent$.value[date]; // Lịch trong ngày
-    if (!calendarInDate) return [];
-
-    // Lặp qua từng tiết trong ngày
-    for (const session in calendarInDate) {
-      const sessionAsNumber = parseInt(session); // Vì for ... in trả về string nên phải ép kiểu
-      const sessionData = calendarInDate[sessionAsNumber]; // Dữ liệu môn học trong tiết
-
-      // Lặp qua từng môn trong tiết
-      for (const data of sessionData) {
-        if (!groupByName[data.defaultName]) groupByName[data.defaultName] = []; // Khởi tạo mảng nếu chưa có
-        const previousSubjectData = groupByName[data.defaultName].find(
-          (v) => v.end === sessionAsNumber - 1
-        ); // Lấy dữ liệu của môn học ở tiết trước đó
-
-        if (!previousSubjectData)
-          // Nếu không có dữ liệu môn học ở tiết trước đó thì tạo mới
-          groupByName[data.defaultName].push({
-            start: sessionAsNumber,
-            end: sessionAsNumber,
-          });
-        else previousSubjectData.end = sessionAsNumber; // Nếu có thì cập nhật tiết kết thúc
-      }
-    }
-
-    // Mảng kết quả cuối cùng, mảng này chứa nhiều hàng
-    // Mỗi hàng chứa một mảng các lịch học không trùng
-    const result: { start: number; end: number; defaultName: string }[][] = [
-      [],
-    ];
-
-    // Lặp qua từng môn trong lịch gộp theo tên môn
-    for (const defaultName in groupByName) {
-      // Lặp qua từng lịch học của môn đó
-      for (const subjectData of groupByName[defaultName]) {
-        const toInsertSubjectData = {
-          start: subjectData.start,
-          end: subjectData.end,
-          defaultName,
-        };
-        let isInserted = false; // Biến kiểm tra xem môn học đã được thêm vào mảng kết quả chưa
-        // Lặp qua từng hàng trong kết quả
-        for (const row of result) {
-          const conflictData = row.find(
-            (c) => c.end >= subjectData.start && c.start <= subjectData.end
-          );
-          if (!conflictData) {
-            row.push(toInsertSubjectData);
-            isInserted = true;
-            break;
-          }
-        }
-        // Nếu hàng lz nào cũng trùng lịch thì tạo hàng mới
-        if (!isInserted) result.push([toInsertSubjectData]);
-      }
-    }
-
-    return result;
+  alertCell(content: string) {
+    alert(content);
   }
 }
