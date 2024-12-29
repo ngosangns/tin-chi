@@ -7,7 +7,9 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "convert": "ts-node ./src/scripts/excel-to-json.ts"
+    "convert": "ts-node ./src/scripts/excel-to-json.ts",
+    "lint": "ng lint && knip",
+    "knip": "knip"
   },
   "private": true,
   "dependencies": {
@@ -19,6 +21,8 @@
     "@angular/platform-browser": "^19.0.0",
     "@angular/platform-browser-dynamic": "^19.0.0",
     "@angular/router": "^19.0.0",
+    "@ng-web-apis/common": "^4.11.1",
+    "@ng-web-apis/workers": "^4.11.1",
     "axios": "^1.7.9",
     "rxjs": "^7.8.1",
     "tslib": "^2.3.0",
@@ -28,18 +32,17 @@
     "@angular-devkit/build-angular": "^19.0.5",
     "@angular/cli": "^19.0.5",
     "@angular/compiler-cli": "^19.0.0",
+    "@eslint/js": "^9.17.0",
     "@types/jasmine": "~5.1.0",
-    "autoprefixer": "^10.4.20",
+    "@types/node": "^22.10.2",
+    "angular-eslint": "19.0.2",
     "daisyui": "^4.12.22",
+    "eslint": "^9.16.0",
     "jasmine": "^5.5.0",
-    "jasmine-core": "~5.4.0",
     "karma": "~6.4.0",
-    "karma-chrome-launcher": "~3.2.0",
-    "karma-coverage": "~2.2.0",
-    "karma-jasmine": "~5.1.0",
-    "karma-jasmine-html-reporter": "~2.1.0",
-    "postcss": "^8.4.49",
+    "knip": "^5.41.1",
     "tailwindcss": "^3.4.16",
-    "typescript": "~5.6.2"
+    "typescript": "~5.6.2",
+    "typescript-eslint": "8.18.0"
   }
 }

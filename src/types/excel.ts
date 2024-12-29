@@ -43,27 +43,27 @@ export type JSONData = Record<
   }
 >; // key: sheetName
 
-export type CellData = Record<string, any>;
+export type CellData = Record<string, unknown>;
 
-export type MajorData = Record<string, SubjectData>; // key: subject name
+type MajorData = Record<string, SubjectData>; // key: subject name
 
-export type SubjectData = Record<string, ClassData>; // key: class code
+type SubjectData = Record<string, ClassData>; // key: class code
 
-export type ClassData = {
+export interface ClassData {
   practiceSchedules?: Record<string, Schedules>; // key: practice class code
   schedules: Schedules;
   [Field.Teacher]: string;
-};
+}
 
-export type Schedules = Schedule[];
+type Schedules = Schedule[];
 
-export type Schedule = {
+interface Schedule {
   [Field.StartDate]: number;
   [Field.EndDate]: number;
   [Field.DayOfWeekStandard]: number;
   [Field.StartSession]: number;
   [Field.EndSession]: number;
-};
+}
 
 export interface JSONResultData {
   title: string;

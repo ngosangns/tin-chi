@@ -42,7 +42,7 @@
       <div
         class="text-xs text-center px-1 py-3 flex flex-col items-center justify-center border-b border-gray-300 bg-base-300 col-span-2"
       >
-        <span class="text-xs md:font-bold md:text-md">
+        <span class="text-xs md:font-bold md:text-base">
           {{ DAY_OF_WEEK_LABEL_MAP[date.getDay()] }}
         </span>
         {{ date.toLocaleDateString("vi") }}
@@ -70,7 +70,7 @@
               'grid-column': subject.startSession + ' / ' + (subject.endSession + 1),
             }"
           >
-            <label
+            <span
               class="hidden md:block bg-primary text-primary-content py-2 px-3 text-xs"
               [ngClass]="{
                 '!bg-error text-error-content': dateData.length > 1
@@ -79,7 +79,7 @@
               <span class="hidden md:block">
                 {{ subject.subjectName }} ({{ subject.classCode }})
               </span>
-            </label>
+            </span>
             <button
               class="block w-full md:hidden btn-primary btn-active btn-xs text-xs"
               (click)="

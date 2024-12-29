@@ -27,7 +27,7 @@ function readSheetAndUnmerge(filePath: string, sheetName: string): WorkSheet {
   const mergedCells = worksheet['!merges'] || [];
   mergedCells.forEach((merge) => {
     const startCell = utils.encode_cell(merge.s); // Ô bắt đầu
-    const endCell = utils.encode_cell(merge.e); // Ô kết thúc
+    // const endCell = utils.encode_cell(merge.e); // Ô kết thúc
     const value = worksheet[startCell]?.v || ''; // Lấy giá trị từ ô bắt đầu
 
     // Điền tất cả các ô trong phạm vi gộp với cùng giá trị
@@ -54,7 +54,9 @@ function readExcelColumnToJson(
     range: `${column}${startRow}:${column}${endRow}`,
   });
 
-  return rangeData.map((row: CellData) => Object.values(row)).flat();
+  return rangeData
+    .map((row: CellData) => Object.values(row) as string[])
+    .flat();
 }
 
 function main() {
@@ -68,12 +70,12 @@ function main() {
     // Khởi tạo dữ liệu JSON cho sheet
     jsonData[sheetName] = {
       fieldData: {
-        [Field.Class]: <string[]>[],
-        [Field.DayOfWeek]: <string[]>[],
-        [Field.Session]: <string[]>[],
-        [Field.StartDate]: <string[]>[],
-        [Field.EndDate]: <string[]>[],
-        [Field.Teacher]: <string[]>[],
+        [Field.Class]: [] as string[],
+        [Field.DayOfWeek]: [] as string[],
+        [Field.Session]: [] as string[],
+        [Field.StartDate]: [] as string[],
+        [Field.EndDate]: [] as string[],
+        [Field.Teacher]: [] as string[],
       },
     };
 
@@ -156,10 +158,10 @@ function main() {
       // Lấy dữ liệu của lớp học hiện tại hoặc tạo mới nếu chưa tồn tại
       const classData = isClassDataExist
         ? jsonResultData.majors[majorKeys[0]][subjectName][classCode]
-        : <ClassData>{
+        : ({
             schedules: [],
             [Field.Teacher]: fieldData[Field.Teacher][i] ?? '',
-          };
+          } as ClassData);
 
       // Lấy dữ liệu của lớp học hiện tại để thêm thông tin vào
       let schedules = classData.schedules;
@@ -238,7 +240,7 @@ function main() {
           for (const practiceClassKey in classData.practiceSchedules)
             subjectData[`${classKey}.${practiceClassKey}`] = {
               schedules: [
-                classData.schedules,
+                ...classData.schedules,
                 ...classData.practiceSchedules[practiceClassKey],
               ],
               [Field.Teacher]: classData[Field.Teacher],

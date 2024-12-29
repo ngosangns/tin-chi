@@ -1,5 +1,5 @@
 import { AsyncPipe, CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { BehaviorSubject } from 'rxjs';
 import {
@@ -18,11 +18,11 @@ import { ClassInfoComponent } from './class-info/class-info.component';
 import { MoreInfoComponent } from './more-info/more-info.component';
 
 export type MajorSelectedSubjects = Record<string, SubjectSelectedClass>; // key: major
-export type SubjectSelectedClass = Record<string, SelectedClass>; // key: subject name
-export type SelectedClass = {
+type SubjectSelectedClass = Record<string, SelectedClass>; // key: subject name
+interface SelectedClass {
   show: boolean;
   class: string | null;
-};
+}
 
 @Component({
   selector: 'app-app-calendar',
@@ -42,7 +42,7 @@ export type SelectedClass = {
   styleUrl: './app-calendar.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class AppCalendarComponent {
+export class AppCalendarComponent implements OnInit {
   EXCEL_PATH = EXCEL_PATH;
 
   readonly loading$ = new BehaviorSubject<boolean>(true);
@@ -55,7 +55,7 @@ export class AppCalendarComponent {
     try {
       this.loading$.next(true);
       await this.cs.fetchData();
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error(e);
       alert('Có lỗi xảy ra, không thể tải dữ liệu!');
     } finally {
@@ -75,7 +75,7 @@ export class AppCalendarComponent {
     try {
       this.loading$.next(true); // Show loading spinner vì việc tính toán khi xếp lịch tự động mất nhiều thời gian
       await this.cs.generateCombinationOfSubjects(auto);
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error(e);
       alert('Có lỗi xảy ra, không thể cập nhật dữ liệu!');
     } finally {

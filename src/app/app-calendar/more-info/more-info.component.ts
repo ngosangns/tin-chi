@@ -9,5 +9,5 @@ import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class MoreInfoComponent {
-  @Input('EXCEL_PATH') EXCEL_PATH = '';
+  @Input() EXCEL_PATH = '';
 }

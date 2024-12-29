@@ -27,13 +27,13 @@ export class ClassInfoComponent {
     select: boolean;
   }>();
 
-  @Output('onChangeClass') readonly onChangeClass$ = new EventEmitter<{
+  @Output('changeClass') readonly changeClass$ = new EventEmitter<{
     majorKey: string;
     subjectName: string;
     classCode: string | null;
   }>();
 
-  @Output('onChangeShow') readonly onChangeShow$ = new EventEmitter<{
+  @Output('changeShow') readonly changeShow$ = new EventEmitter<{
     majorKey: string;
     subjectName: string;
     show: boolean;
@@ -59,20 +59,20 @@ export class ClassInfoComponent {
     this.generateCombinationOfSubjects$.emit(auto);
   }
 
-  onChangeShow(majorKey: string, subjectName: string): void {
-    this.onChangeShow$.emit({
+  changeShow(majorKey: string, subjectName: string): void {
+    this.changeShow$.emit({
       majorKey,
       subjectName,
       show: !this.cs.selectedClasses$.value?.[majorKey]?.[subjectName]?.show,
     });
   }
 
-  onChangeClass(
+  changeClass(
     majorKey: string,
     subjectName: string,
     classCode: string | null
   ): void {
-    this.onChangeClass$.emit({
+    this.changeClass$.emit({
       majorKey,
       subjectName,
       classCode,

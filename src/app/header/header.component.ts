@@ -8,5 +8,5 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class HeaderComponent {
-  externalLinkIcon: string = '../assets/external-link-icon.svg';
+  externalLinkIcon = '../assets/external-link-icon.svg';
 }

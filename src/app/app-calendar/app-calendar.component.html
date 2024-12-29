@@ -6,15 +6,16 @@
     @let calendar = cs.calendar$ | async;
     <button
       *ngIf="calendar?.title?.length"
-      class="hidden md:inline-block btn mb-2 btn-outline btn-active cursor-default border-none hover:bg-neural"
+      class="hidden btn-primary md:inline-block btn mb-2 btn-outline btn-active cursor-default border-none"
+      disabled
     >
       {{ calendar!.title }}
     </button>
 
     <button
-      class="btn-md btn-primary text-md mb-2 border-none hover:bg-base-200 whitespace-nowrap"
+      class="btn-sm text-xs btn-outline md:btn-md md:text-base mb-2 border-none whitespace-nowrap font-bold"
       (click)="switchTab('class-info')"
-      [ngClass]="{ 'btn-active hover:bg-primary': showTab === 'class-info' }"
+      [ngClass]="{ 'btn-active': showTab === 'class-info' }"
     >
       Thông tin lớp
     </button>
@@ -27,18 +28,18 @@
       data-tip="Trùng lịch"
     >
       <button
-        class="btn-md btn-primary text-md mb-2 border-none hover:bg-base-200 whitespace-nowrap"
+        class="btn-sm text-xs btn-outline md:btn-md md:text-base mb-2 border-none whitespace-nowrap font-bold"
         (click)="switchTab('calendar')"
-        [ngClass]="{ 'btn-active hover:bg-primary': showTab === 'calendar' }"
+        [ngClass]="{ 'btn-active': showTab === 'calendar' }"
       >
         Lịch học
       </button>
     </div>
 
     <button
-      class="btn-md btn-primary text-md mb-2 border-none hover:bg-base-200 whitespace-nowrap"
+      class="btn-sm text-xs btn-outline md:btn-md md:text-base mb-2 border-none whitespace-nowrap font-bold"
       (click)="switchTab('more-info')"
-      [ngClass]="{ 'btn-active hover:bg-primary': showTab === 'more-info' }"
+      [ngClass]="{ 'btn-active': showTab === 'more-info' }"
     >
       Thông tin thêm
     </button>
@@ -46,7 +47,7 @@
     <div class="flex-grow hidden md:block"></div>
 
     <button
-      class="btn-md text-md mb-2 border-none hover:bg-base-200 whitespace-nowrap"
+      class="btn-sm text-xs btn-outline md:btn-md md:text-base mb-2 border-none whitespace-nowrap font-bold"
       (click)="print()"
       [disabled]="loading$ | async"
     >
@@ -81,8 +82,8 @@
       [ngClass]="{
         'hidden': showTab !== 'class-info',
       }"
-      (onChangeClass)="cs.changeClass($event)"
-      (onChangeShow)="cs.changeShow($event)"
+      (changeClass)="cs.changeClass($event)"
+      (changeShow)="cs.changeShow($event)"
       (selectMajor)="cs.selectMajor($event)"
       (generateCombinationOfSubjects)="generateCombinationOfSubjects($event)"
     >
