@@ -6,9 +6,12 @@
     class="sticky top-0 py-3 mb-3 rounded-b-md z-10 flex gap-3 max-w-full bg-base-100 overflow-x-auto"
   >
     @let oldAuto = cs.oldAuto$ | async; @let autoTh = (cs.autoTh$ | async)!;
+    @let selectedClasses = (cs.selectedClasses$ | async)!; @let
+    isHaveSomeClassSelected = (isHaveSomeClassSelected$ | async)!;
     <button
       class="btn btn-xs text-xs md:btn-sm md:text-sm btn-outline"
       (click)="generateCombinationOfSubjects('refer-non-overlap')"
+      [disabled]="!isHaveSomeClassSelected"
     >
       Tự động xếp lịch
       <span
@@ -21,6 +24,7 @@
     <button
       class="btn btn-xs text-xs md:btn-sm md:text-sm btn-outline"
       (click)="generateCombinationOfSubjects('refer-non-overlap-morning')"
+      [disabled]="!isHaveSomeClassSelected"
     >
       Tự động xếp lịch (ưu tiên buổi sáng)
       <span
@@ -33,6 +37,7 @@
     <button
       class="btn btn-xs text-xs md:btn-sm md:text-sm btn-outline"
       (click)="generateCombinationOfSubjects('refer-non-overlap-afternoon')"
+      [disabled]="!isHaveSomeClassSelected"
     >
       Tự động xếp lịch (ưu tiên buổi chiều)
       <span
@@ -45,6 +50,7 @@
     <button
       class="btn btn-xs text-xs md:btn-sm md:text-sm btn-outline"
       (click)="generateCombinationOfSubjects('refer-non-overlap-evening')"
+      [disabled]="!isHaveSomeClassSelected"
     >
       Tự động xếp lịch (ưu tiên buổi tối)
       <span
@@ -56,8 +62,7 @@
     </button>
   </div>
 
-  @let calendar = cs.calendar$ | async; @let selectedClasses =
-  (cs.selectedClasses$ | async)!;
+  @let calendar = cs.calendar$ | async;
   <div
     *ngFor="let major of calendar?.majors || {} | keyvalue"
     class="collapse collapse-plus border border-base-content bg-base-100 w-full mx-auto mb-4"

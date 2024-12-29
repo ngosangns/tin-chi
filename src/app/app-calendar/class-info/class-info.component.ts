@@ -9,6 +9,7 @@ import {
 import { FormsModule } from '@angular/forms';
 import { AutoMode } from '../../../types/calendar';
 import { CalendarService } from '../calendar.service';
+import { map, Observable } from 'rxjs';
 
 @Component({
   selector: 'app-class-info',
@@ -44,10 +45,22 @@ export class ClassInfoComponent {
 
   readonly defaultClassLabel = 'Chọn lớp';
 
+  isHaveSomeClassSelected$: Observable<boolean>;
+
   constructor(
     public readonly cs: CalendarService,
     private cdr: ChangeDetectorRef
-  ) {}
+  ) {
+    this.isHaveSomeClassSelected$ = this.cs.selectedClasses$.pipe(
+      map((selectedClasses) =>
+        selectedClasses
+          ? Object.values(selectedClasses).some((majorData) =>
+              Object.values(majorData).some((subjectData) => subjectData.show)
+            )
+          : false
+      )
+    );
+  }
 
   selectMajor(major: string, select: boolean): void {
     this.selectMajor$.emit({ major, select });
