@@ -55,7 +55,7 @@ export interface ClassData {
   [Field.Teacher]: string;
 }
 
-type Schedules = Schedule[];
+export type Schedules = Schedule[];
 
 interface Schedule {
   [Field.StartDate]: number;

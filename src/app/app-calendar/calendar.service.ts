@@ -1,31 +1,11 @@
 import { Injectable } from '@angular/core';
-import {
-  BehaviorSubject,
-  combineLatest,
-  firstValueFrom,
-  map,
-  take,
-} from 'rxjs';
-import {
-  END_AFTERNOON_SESSION,
-  END_EVENING_SESSION,
-  END_MORNING_SESSION,
-  JSON_PATH,
-  MAX_SESSION,
-  MIN_SESSION,
-  START_AFTERNOON_SESSION,
-  START_EVENING_SESSION,
-  START_MORNING_SESSION,
-} from '../../constants/calendar';
+import { BehaviorSubject, combineLatest, map } from 'rxjs';
+import { JSON_PATH } from '../../constants/calendar';
 import { AutoMode } from '../../types/calendar';
 import { Field, JSONResultData } from '../../types/excel';
 import { getTotalDaysBetweenDates, numToDate } from '../../utils/date';
 import { MajorSelectedSubjects } from './app-calendar.component';
-import { toData, WebWorker } from '@ng-web-apis/workers';
-import {
-  generateCombinationOfSubjects,
-  GenerateCombinationOfSubjectsDependencies,
-} from './calendar.worker';
+import { CalendarWorkerRepsonse } from './calendar.worker';
 
 @Injectable({
   providedIn: 'root',
@@ -140,18 +120,11 @@ export class CalendarService {
     })
   );
 
-  private readonly calendarWorker = WebWorker.fromFunction<
-    {
-      calendar: JSONResultData;
-      selectedSubjects: [string, string][]; // Danh sách các môn học được chọn: [majorKey, subjectKey][]
-      auto: AutoMode;
-      autoTh: number;
-      deps: GenerateCombinationOfSubjectsDependencies;
-    },
-    {
-      selectedClasses: [string, string, string][];
-    }
-  >(generateCombinationOfSubjects);
+  private readonly calendarWorker = new Worker(
+    new URL('./calendar.worker', import.meta.url)
+  );
+
+  constructor() {}
 
   async fetchData(): Promise<void> {
     const response: Response = await fetch(JSON_PATH);
@@ -166,44 +139,46 @@ export class CalendarService {
 
     this.oldAuto$.next(auto);
 
-    this.calendarWorker.postMessage({
-      calendar: this.calendar$.value,
-      selectedSubjects: Object.entries(this.selectedClasses$.value).flatMap(
-        ([majorKey, majorData]) =>
-          Object.entries(majorData)
-            .filter((subject) => subject[1].show)
-            .map((subject) => [majorKey, subject[0]])
-      ) as [string, string][],
-      auto,
-      autoTh: this.autoTh$.value,
-      deps: {
-        START_MORNING_SESSION,
-        END_MORNING_SESSION,
-        START_AFTERNOON_SESSION,
-        END_AFTERNOON_SESSION,
-        START_EVENING_SESSION,
-        END_EVENING_SESSION,
-        Field,
-        MIN_SESSION,
-        MAX_SESSION,
-      },
-    });
+    try {
+      const response = await new Promise<CalendarWorkerRepsonse>(
+        (resolve, reject) => {
+          try {
+            this.calendarWorker.onmessage = (data: CalendarWorkerRepsonse) =>
+              resolve(data);
+            this.calendarWorker.postMessage({
+              calendar: this.calendar$.value,
+              selectedSubjects: Object.entries(
+                this.selectedClasses$.value
+              ).flatMap(([majorKey, majorData]) =>
+                Object.entries(majorData)
+                  .filter((subject) => subject[1].show)
+                  .map((subject) => [majorKey, subject[0]])
+              ) as [string, string][],
+              auto,
+              autoTh: this.autoTh$.value,
+            });
+          } catch (e: unknown) {
+            reject(e);
+          }
+        }
+      );
 
-    const data = await firstValueFrom(
-      this.calendarWorker.pipe(toData(), take(1))
-    );
+      const selectedClasses = this.selectedClasses$.value;
 
-    const selectedClasses = this.selectedClasses$.value;
+      for (const [majorKey, subjectName, classCode] of response.data
+        .selectedClasses) {
+        if (!selectedClasses[majorKey]) selectedClasses[majorKey] = {};
+        selectedClasses[majorKey][subjectName] = {
+          show: true,
+          class: classCode,
+        };
+      }
 
-    for (const [majorKey, subjectName, classCode] of data.selectedClasses) {
-      if (!selectedClasses[majorKey]) selectedClasses[majorKey] = {};
-      selectedClasses[majorKey][subjectName] = {
-        show: true,
-        class: classCode,
-      };
+      this.selectedClasses$.next(selectedClasses);
+    } catch (e: unknown) {
+      alert('Có lỗi xảy ra khi xếp lịch');
+      console.error(e);
     }
-
-    this.selectedClasses$.next(selectedClasses);
   }
 
   selectMajor(e: { major: string; select: boolean }): void {

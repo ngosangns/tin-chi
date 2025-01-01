@@ -1,45 +1,33 @@
+import {
+  START_MORNING_SESSION,
+  END_MORNING_SESSION,
+  START_AFTERNOON_SESSION,
+  END_AFTERNOON_SESSION,
+  START_EVENING_SESSION,
+  END_EVENING_SESSION,
+  MAX_SESSION,
+  MIN_SESSION,
+} from '../../constants/calendar';
 import { AutoMode } from '../../types/calendar';
 import { Field, JSONResultData } from '../../types/excel';
+import { numToDate } from '../../utils/date';
 
-export type GenerateCombinationOfSubjectsDependencies = {
-  START_MORNING_SESSION: number;
-  END_MORNING_SESSION: number;
-  START_AFTERNOON_SESSION: number;
-  END_AFTERNOON_SESSION: number;
-  START_EVENING_SESSION: number;
-  END_EVENING_SESSION: number;
-  Field: typeof Field;
-  MIN_SESSION: number;
-  MAX_SESSION: number;
+export type CalendarWorkerRepsonse = {
+  data: GenerateCombinationOfSubjectsResponse;
+};
+
+type GenerateCombinationOfSubjectsResponse = {
+  selectedClasses: [string, string, string][];
 };
 
 // Tìm ra tổ hợp các lớp từ các môn được chọn sao cho độ trùng lặp thời gian học là ít nhất
-export async function generateCombinationOfSubjects(e: {
+export function generateCombinationOfSubjects(e: {
   calendar: JSONResultData;
   selectedSubjects: [string, string][]; // Danh sách các môn học được chọn: [majorKey, subjectKey][]
   auto: AutoMode;
   autoTh: number;
-  deps: GenerateCombinationOfSubjectsDependencies;
-}): Promise<{
-  selectedClasses: [string, string, string][];
-}> {
-  const {
-    calendar,
-    selectedSubjects,
-    auto,
-    autoTh,
-    deps: {
-      START_MORNING_SESSION,
-      END_MORNING_SESSION,
-      START_AFTERNOON_SESSION,
-      END_AFTERNOON_SESSION,
-      START_EVENING_SESSION,
-      END_EVENING_SESSION,
-      Field,
-      MIN_SESSION,
-      MAX_SESSION,
-    },
-  } = e;
+}): GenerateCombinationOfSubjectsResponse {
+  const { calendar, selectedSubjects, auto, autoTh } = e;
 
   // n = số môn
   // m = số lớp của mỗi môn
@@ -72,22 +60,19 @@ export async function generateCombinationOfSubjects(e: {
       let totalShiftSesion = 0;
 
       for (const schedule of classData.schedules) {
-        // Lấy ra số tuần giữa ngày bắt đầu và ngày kết thúc
-        const totalWeeks =
-          (schedule[Field.EndDate] -
-            schedule[Field.StartDate] +
-            aDayInMiliseconds) /
-          (aDayInMiliseconds * 7);
-
         const classScheduleGridAtI: [number, number, number, number] = [
-          schedule[Field.StartDate],
-          schedule[Field.EndDate],
+          numToDate(schedule[Field.StartDate]).getTime(),
+          numToDate(schedule[Field.EndDate]).getTime() + aDayInMiliseconds - 1,
           schedule[Field.DayOfWeekStandard],
           ((1 <<
             (schedule[Field.EndSession] - schedule[Field.StartSession] + 1)) -
             1) <<
             (MAX_SESSION - MIN_SESSION + 1 - schedule[Field.EndSession]), // Tạo lịch bitmask của lớp trong lịch hiện tại
         ];
+
+        // Lấy ra số tuần giữa ngày bắt đầu và ngày kết thúc
+        const [startDate, endDate] = classScheduleGridAtI;
+        const totalWeeks = (endDate + 1 - startDate) / (aDayInMiliseconds * 7);
 
         classScheduleGrid.push(classScheduleGridAtI); // Thêm lịch học của lớp vào lịch
 
@@ -237,3 +222,5 @@ export async function generateCombinationOfSubjects(e: {
     selectedClasses: [],
   };
 }
+
+self.onmessage = (e) => self.postMessage(generateCombinationOfSubjects(e.data));
