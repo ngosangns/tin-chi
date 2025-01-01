@@ -29,12 +29,9 @@ export function generateCombinationOfSubjects(e: {
 }): GenerateCombinationOfSubjectsResponse {
   const { calendar, selectedSubjects, auto, autoTh } = e;
 
-  // n = số môn
-  // m = số lớp của mỗi môn
-  // p = số lịch của mỗi lớp
-  const classes: [string, string, string][][] = []; // Danh sách các lớp của các môn: n * m * [majorKey, subjectKey, classCode]
-  const timeGrid: [number, number, number, number][][][] = []; // Lịch học của các lớp của các môn: n * m * p * [startDate, endDate, dayOfWeek, sessionBitmask]
-  const totalSessionsInShift: number[][] = []; // Tổng số tiết học trong buổi auto của các lớp của các môn: n * m
+  const classes: [string, string, string][][] = []; // Danh sách các lớp của các môn: [majorKey, subjectKey, classCode][numClasses][numSubjects]
+  const timeGrid: [number, number, number, number][][][] = []; // Lịch học của các lớp của các môn: [startDate, endDate, dayOfWeek, sessionBitmask][numSchedules][numClasses][numSubjects]
+  const totalSessionsInShift: number[][] = []; // Tổng số tiết học trong buổi auto của các lớp của các môn: [numClasses][numSubjects]
 
   const autoData = [
     ['refer-non-overlap-morning', START_MORNING_SESSION, END_MORNING_SESSION],
@@ -50,12 +47,12 @@ export function generateCombinationOfSubjects(e: {
 
   selectedSubjects.forEach(([majorKey, subjectKey]) => {
     const subjectData = calendar.majors[majorKey][subjectKey];
-    const subjectClasses: [string, string, string][] = []; // Danh sách các lớp: n * [majorKey, subjectKey, classCode]
-    const subjectTimeGrid: [number, number, number, number][][] = []; // Lịch học của tất cả các lớp: m * p * [startDate, endDate, dayOfWeek, sessionBitmask]
-    const subjectTotalSessionsInShift: number[] = []; // Tổng số tiết học trong buổi auto của tất cả các lớp: m
+    const subjectClasses: [string, string, string][] = []; // Danh sách các lớp: [majorKey, subjectKey, classCode][numSubjects]
+    const subjectTimeGrid: [number, number, number, number][][] = []; // Lịch học của tất cả các lớp: [startDate, endDate, dayOfWeek, sessionBitmask][numSchedules][numClasses]
+    const subjectTotalSessionsInShift: number[] = []; // Tổng số tiết học trong buổi auto của tất cả các lớp: [numClasses]
 
     Object.entries(subjectData).forEach(([classCode, classData]) => {
-      const classScheduleGrid: [number, number, number, number][] = []; // Lịch học của lớp: m * [startDate, endDate, dayOfWeek, sessionBitmask]
+      const classScheduleGrid: [number, number, number, number][] = []; // Lịch học của lớp: [startDate, endDate, dayOfWeek, sessionBitmask][numClasses]
 
       let totalShiftSesion = 0;
 
@@ -99,7 +96,7 @@ export function generateCombinationOfSubjects(e: {
     totalSessionsInShift.push(subjectTotalSessionsInShift); // Thêm tổng số tiết học trong mỗi buổi của các lớp trong môn học
   });
 
-  const combinations: number[][] = []; // Danh sách các tổ hợp: Số lượng tổ hợp * (n + 1)
+  const combinations: number[][] = []; // Danh sách các tổ hợp: Số lượng tổ hợp * (numSubjects + 1)
   const threshold = 12; // số tiết học có thể trùng tối đa trong 1 tổ hợp
 
   function countBit1(n: number): number {
