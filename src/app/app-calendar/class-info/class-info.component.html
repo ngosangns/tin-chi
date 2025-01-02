@@ -1,67 +1,67 @@
 <div
-  id="class-info"
-  class="overflow-scroll overflow-x-hidden overflow-y-overlay max-h-[calc(100vh-18rem)]"
+  class="sticky top-0 py-3 mb-3 rounded-b-md z-10 flex gap-3 max-w-full bg-base-100 overflow-x-auto"
 >
-  <div
-    class="sticky top-0 py-3 mb-3 rounded-b-md z-10 flex gap-3 max-w-full bg-base-100 overflow-x-auto"
+  @let oldAuto = cs.oldAuto$ | async; @let autoTh = (cs.autoTh$ | async)!; @let
+  selectedClasses = (cs.selectedClasses$ | async)!; @let isHaveSomeClassSelected
+  = (isHaveSomeClassSelected$ | async)!;
+  <button
+    class="btn btn-xs text-xs md:btn-sm md:text-sm btn-outline"
+    (click)="generateCombinationOfSubjects('refer-non-overlap')"
+    [disabled]="!isHaveSomeClassSelected"
   >
-    @let oldAuto = cs.oldAuto$ | async; @let autoTh = (cs.autoTh$ | async)!;
-    @let selectedClasses = (cs.selectedClasses$ | async)!; @let
-    isHaveSomeClassSelected = (isHaveSomeClassSelected$ | async)!;
-    <button
-      class="btn btn-xs text-xs md:btn-sm md:text-sm btn-outline"
-      (click)="generateCombinationOfSubjects('refer-non-overlap')"
-      [disabled]="!isHaveSomeClassSelected"
+    Tự động xếp lịch
+    <span
+      class="text-xs md:btn md:btn-active md:btn-xs"
+      *ngIf="oldAuto === 'refer-non-overlap' && autoTh > -1"
     >
-      Tự động xếp lịch
-      <span
-        class="text-xs md:btn md:btn-active md:btn-xs"
-        *ngIf="oldAuto === 'refer-non-overlap' && autoTh > -1"
-      >
-        {{ autoTh + 1 }}
-      </span>
-    </button>
-    <button
-      class="btn btn-xs text-xs md:btn-sm md:text-sm btn-outline"
-      (click)="generateCombinationOfSubjects('refer-non-overlap-morning')"
-      [disabled]="!isHaveSomeClassSelected"
+      {{ autoTh + 1 }}
+    </span>
+  </button>
+  <button
+    class="btn btn-xs text-xs md:btn-sm md:text-sm btn-outline"
+    (click)="generateCombinationOfSubjects('refer-non-overlap-morning')"
+    [disabled]="!isHaveSomeClassSelected"
+  >
+    Tự động xếp lịch (ưu tiên buổi sáng)
+    <span
+      class="text-xs md:btn md:btn-active md:btn-xs"
+      *ngIf="oldAuto === 'refer-non-overlap-morning' && autoTh! > -1"
     >
-      Tự động xếp lịch (ưu tiên buổi sáng)
-      <span
-        class="text-xs md:btn md:btn-active md:btn-xs"
-        *ngIf="oldAuto === 'refer-non-overlap-morning' && autoTh! > -1"
-      >
-        {{ autoTh + 1 }}
-      </span>
-    </button>
-    <button
-      class="btn btn-xs text-xs md:btn-sm md:text-sm btn-outline"
-      (click)="generateCombinationOfSubjects('refer-non-overlap-afternoon')"
-      [disabled]="!isHaveSomeClassSelected"
+      {{ autoTh + 1 }}
+    </span>
+  </button>
+  <button
+    class="btn btn-xs text-xs md:btn-sm md:text-sm btn-outline"
+    (click)="generateCombinationOfSubjects('refer-non-overlap-afternoon')"
+    [disabled]="!isHaveSomeClassSelected"
+  >
+    Tự động xếp lịch (ưu tiên buổi chiều)
+    <span
+      class="text-xs md:btn md:btn-active md:btn-xs"
+      *ngIf="oldAuto === 'refer-non-overlap-afternoon' && autoTh > -1"
     >
-      Tự động xếp lịch (ưu tiên buổi chiều)
-      <span
-        class="text-xs md:btn md:btn-active md:btn-xs"
-        *ngIf="oldAuto === 'refer-non-overlap-afternoon' && autoTh > -1"
-      >
-        {{ autoTh + 1 }}
-      </span>
-    </button>
-    <button
-      class="btn btn-xs text-xs md:btn-sm md:text-sm btn-outline"
-      (click)="generateCombinationOfSubjects('refer-non-overlap-evening')"
-      [disabled]="!isHaveSomeClassSelected"
+      {{ autoTh + 1 }}
+    </span>
+  </button>
+  <button
+    class="btn btn-xs text-xs md:btn-sm md:text-sm btn-outline"
+    (click)="generateCombinationOfSubjects('refer-non-overlap-evening')"
+    [disabled]="!isHaveSomeClassSelected"
+  >
+    Tự động xếp lịch (ưu tiên buổi tối)
+    <span
+      class="btn btn-active btn-xs"
+      *ngIf="oldAuto === 'refer-non-overlap-evening' && autoTh > -1"
     >
-      Tự động xếp lịch (ưu tiên buổi tối)
-      <span
-        class="btn btn-active btn-xs"
-        *ngIf="oldAuto === 'refer-non-overlap-evening' && autoTh > -1"
-      >
-        {{ autoTh + 1 }}
-      </span>
-    </button>
-  </div>
+      {{ autoTh + 1 }}
+    </span>
+  </button>
+</div>
 
+<div
+  id="class-info"
+  class="overflow-scroll overflow-x-hidden overflow-y-overlay max-h-[calc(100vh-22.5rem)] md:max-h-[calc(100vh-25rem)]"
+>
   @let calendar = cs.calendar$ | async;
   <div
     *ngFor="let major of calendar?.majors || {} | keyvalue"

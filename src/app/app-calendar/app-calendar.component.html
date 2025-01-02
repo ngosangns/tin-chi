@@ -20,21 +20,19 @@
       Thông tin lớp
     </button>
 
-    <div
-      [ngClass]="{
-        'tooltip tooltip-open tooltip-error before:text-neutral-content before:rounded-box':
-          (cs.calendarTableData$ | async)?.totalConflictedSessions
-      }"
-      data-tip="Trùng lịch"
+    <button
+      class="btn-sm text-xs btn-outline md:btn-md md:text-base mb-2 border-none whitespace-nowrap font-bold"
+      (click)="switchTab('calendar')"
+      [ngClass]="{ 'btn-active': showTab === 'calendar' }"
     >
-      <button
-        class="btn-sm text-xs btn-outline md:btn-md md:text-base mb-2 border-none whitespace-nowrap font-bold"
-        (click)="switchTab('calendar')"
-        [ngClass]="{ 'btn-active': showTab === 'calendar' }"
+      Lịch học
+      <div
+        class="badge badge-accent"
+        *ngIf="(cs.calendarTableData$ | async)?.totalConflictedSessions"
       >
-        Lịch học
-      </button>
-    </div>
+        Trùng
+      </div>
+    </button>
 
     <button
       class="btn-sm text-xs btn-outline md:btn-md md:text-base mb-2 border-none whitespace-nowrap font-bold"
@@ -58,22 +56,15 @@
   <div class="relative">
     <!-- Hiển thị danh sách lịch đã chọn khi in -->
     <ul class="hidden print:block">
-      <ng-template
-        *ngFor="let major of (cs.selectedClasses$ | async) || {} | keyvalue"
-        [ngIf]="true"
-      >
-        <ng-template
-          *ngFor="let subject of major.value || {} | keyvalue"
-          [ngIf]="true"
-        >
-          <li *ngIf="subject.value.class && subject.value.show" class="mb-3">
-            <p class="border px-3 py-1 inline-block">
-              {{ major.key }} - {{ subject.key }}:
-              {{ subject.value.class }}
-            </p>
-          </li>
-        </ng-template>
-      </ng-template>
+      @for(major of (cs.selectedClasses$ | async) || {} | keyvalue; track major)
+      { @for(subject of major.value || {} | keyvalue; track subject) {
+      <li *ngIf="subject.value.class && subject.value.show" class="mb-3">
+        <p class="border px-3 py-1 inline-block">
+          {{ major.key }} - {{ subject.key }}:
+          {{ subject.value.class }}
+        </p>
+      </li>
+      } }
     </ul>
 
     <!-- Bảng chọn lịch -->

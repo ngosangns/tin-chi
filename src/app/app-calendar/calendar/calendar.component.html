@@ -36,61 +36,59 @@
 
     <!-- Lặp qua từng ngày -->
     @let calendarTableData = cs.calendarTableData$ | async; @let dateList =
-    dateList$ | async;
-    <ng-template *ngFor="let date of dateList" [ngIf]="true">
-      <!-- Hiển thị ngày -->
-      <div
-        class="text-xs text-center px-1 py-3 flex flex-col items-center justify-center border-b border-gray-300 bg-base-300 col-span-2"
-      >
-        <span class="text-xs md:font-bold md:text-base">
-          {{ DAY_OF_WEEK_LABEL_MAP[date.getDay()] }}
-        </span>
-        {{ date.toLocaleDateString("vi") }}
-      </div>
+    dateList$ | async; @for(date of dateList; track date) {
+    <!-- Hiển thị ngày -->
+    <div
+      class="text-xs text-center px-1 py-3 flex flex-col items-center justify-center border-b border-gray-300 bg-base-300 col-span-2"
+    >
+      <span class="text-xs md:font-bold md:text-base">
+        {{ DAY_OF_WEEK_LABEL_MAP[date.getDay()] }}
+      </span>
+      {{ date.toLocaleDateString("vi") }}
+    </div>
 
-      <!-- Chi tiết ngày học -->
-      <div
-        class="border-b border-gray-300 py-2 gap-2 items-center"
-        [ngClass]="{
+    <!-- Chi tiết ngày học -->
+    <div
+      class="border-b border-gray-300 py-2 gap-2 items-center"
+      [ngClass]="{
           'bg-base-300': [6, 0].includes(date.getDay()),
         }"
-        style="
-          grid-column: 3 / 19;
-          display: grid;
-          grid-template-columns: repeat(16, 1fr);
-        "
+      style="
+        grid-column: 3 / 19;
+        display: grid;
+        grid-template-columns: repeat(16, 1fr);
+      "
+    >
+      @let dateData =
+      calendarTableData?.data?.[getTotalDaysBetweenDates(dateList![0], date)] ||
+      []; @for(row of dateData; track row; let idx = $index) {
+      <div
+        *ngFor="let subject of row"
+        [ngStyle]="{
+          'grid-column':
+            subject.startSession + ' / ' + (subject.endSession + 1),
+          'grid-row': idx + 1
+        }"
       >
-        @let dateData =
-        calendarTableData?.data?.[getTotalDaysBetweenDates(dateList![0], date)]
-        || [];
-        <ng-template *ngFor="let row of dateData" [ngIf]="true">
-          <div
-            *ngFor="let subject of row"
-            [ngStyle]="{
-              'grid-column': subject.startSession + ' / ' + (subject.endSession + 1),
-            }"
-          >
-            <span
-              class="hidden md:block bg-primary text-primary-content py-2 px-3 text-xs"
-              [ngClass]="{
-                '!bg-error text-error-content': dateData.length > 1
-              }"
-            >
-              <span class="hidden md:block">
-                {{ subject.subjectName }} ({{ subject.classCode }})
-              </span>
-            </span>
-            <button
-              class="block w-full md:hidden btn-primary btn-active btn-xs text-xs"
-              (click)="
-                alertCell(subject.subjectName + ' - ' + subject.classCode)
-              "
-            >
-              Xem
-            </button>
-          </div>
-        </ng-template>
+        <span
+          class="hidden md:block bg-primary text-primary-content py-2 px-3 text-xs"
+          [ngClass]="{
+            '!bg-error text-error-content': dateData.length > 1
+          }"
+        >
+          <span class="hidden md:block">
+            {{ subject.subjectName }} ({{ subject.classCode }})
+          </span>
+        </span>
+        <button
+          class="block w-full md:hidden btn-primary btn-active btn-xs text-xs"
+          (click)="alertCell(subject.subjectName + ' - ' + subject.classCode)"
+        >
+          Xem
+        </button>
       </div>
-    </ng-template>
+      }
+    </div>
+    }
   </div>
 </div>
