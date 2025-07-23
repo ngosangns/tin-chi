@@ -1,3 +1,7 @@
+Project đã được chuyển đến: [https://github.com/ngosangns/kma-schedule-ngosangns](https://github.com/ngosangns/kma-schedule-ngosangns)
+
+---
+
 # Tool hỗ trợ xếp lịch cho các đồng chí KMA
 
 - Demo: [https://tin-chi-ngosangns.web.app](https://tin-chi-ngosangns.web.app/)
